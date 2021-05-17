@@ -1,0 +1,4 @@
+__pycache__
+*.f90
+*.log
+*.png
