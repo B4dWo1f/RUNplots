@@ -8,7 +8,6 @@ import datetime as dt
 import wrf
 from netCDF4 import Dataset
 
-
 # Get UTCshift automatically
 UTCshift = dt.datetime.now() - dt.datetime.utcnow()
 UTCshift = dt.timedelta(hours = round(UTCshift.total_seconds()/3600))
@@ -86,17 +85,25 @@ def get_sounding(date0, lat0, lon0, data_fol, OUT_fol,
    return name
 
 
+if __name__ == '__main__':
+   import numpy as np
+   from random import randint
+   date_req = dt.datetime(2021,5,17,14)   #XXX UTC
+   # from random import choice
+   # lat,lon = choice( [(40.1,-3.5), (41.17, -3.624)] )
+   lat,lon = 41.078854,-3.707029
+   fname = 'soundings.csv'
+   Points = np.loadtxt(fname,usecols=(0,1),delimiter=',')
+   names = np.loadtxt(fname,usecols=(2,),delimiter=',',dtype=str)
 
-date_req = dt.datetime(2021,5,16,12)
-# from random import choice
-# lat,lon = choice( [(40.1,-3.5), (41.17, -3.624)] )
-lat,lon = 40.1,-3.5
-lat,lon = 41.105178018195375, -3.712531733865551
-# lat,lon = 41.17, -3.624
-data_folder = '../../Documents/storage/WRFOUT/Spain6_1/'
-OUT_folder = 'plots'
-place = ''
-fout = 'asfcg.png'
-dom = 'd02'
-fname = get_sounding(date_req, lat, lon, data_folder, OUT_folder, place, dom, fout)
-print('Saved in:',fname)
+   ind = randint(0,Points.shape[0]-1)
+   lat,lon = Points[ind,:]
+   place = names[ind]
+
+   # lat,lon = 41.17, -3.624
+   data_folder = '../../Documents/storage/WRFOUT/Spain6_1/'
+   OUT_folder = 'plots'
+   fout = 'sounding.png'
+   dom = 'd02'
+   fname = get_sounding(date_req, lat, lon, data_folder, OUT_folder, place, dom, fout)
+   print('Saved in:',fname)
