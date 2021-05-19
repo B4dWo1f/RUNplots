@@ -1,12 +1,17 @@
 #!/usr/bin/python3
 # -*- coding: UTF-8 -*-
 
-# import os
-# here = os.path.dirname(os.path.realpath(__file__))
-import util as ut
+import os
+here = os.path.dirname(os.path.realpath(__file__))
+is_cron = bool( os.getenv('RUN_BY_CRON') )
+# import util as ut
 import datetime as dt
 import wrf
 from netCDF4 import Dataset
+import plots
+import log_help
+import logging
+LG = logging.getLogger('main')
 
 # Get UTCshift automatically
 UTCshift = dt.datetime.now() - dt.datetime.utcnow()
@@ -22,7 +27,6 @@ def get_sounding(date0, lat0, lon0, data_fol, OUT_fol,
 
    # print('File:')
    INfname = f'{data_fol}/wrfout_{dom}_{date0.strftime(fmt_wrfout)}:00:00'
-
 
    # print('File:',INfname)
    ncfile = Dataset(INfname)
@@ -78,14 +82,43 @@ def get_sounding(date0, lat0, lon0, data_fol, OUT_fol,
    else: name = fout
    title = f"{place.capitalize()}"
    title += f" {(date+UTCshift).strftime('%d/%m/%Y-%H:%M')}"
-   ut.sounding(lat,lon, lats,lons, date, ncfile,
-               pressure, tc, td, t2m,
-               ua, va,
-               title, fout=name)
+   # ut.sounding(lat,lon, lats,lons, date, ncfile,
+   #             pressure, tc, td, t2m,
+   #             ua, va,
+   #             title, fout=name)
+#sounding(lat,lon,lats,lons,date,ncfile,pressure,tc,td,t0,ua,va,title='',fout='sounding.png')
+   i,j = wrf.ll_to_xy(ncfile, lat, lon)  # returns w-e, n-s
+   # Get sounding data for specific location
+   # h = heights[:,i,j]
+   latlon = f'({lats[j,i].values:.3f},{lons[j,i].values:.3f})'
+   nk,nj,ni = pressure.shape
+   p = pressure[:,j,i]
+   tc = tc[:,j,i]
+   tdc = td[:,j,i]
+   u = ua[:,j,i]
+   v = va[:,j,i]
+   t0 = t2m[j,i]
+   LG.info('calling skewt plot')
+   plots.sounding.skewt_plot(p,tc,tdc,t0,date,u,v,fout=fout,latlon=latlon,title=title)
    return name
 
 
 if __name__ == '__main__':
+   ################################# LOGGING ####################################
+   import logging
+   import log_help
+   log_file = here+'/'+'.'.join( __file__.split('/')[-1].split('.')[:-1] ) 
+   log_file = log_file + f'.log'
+   lv = logging.DEBUG
+   logging.basicConfig(level=lv,
+                    format='%(asctime)s %(name)s:%(levelname)s - %(message)s',
+                    datefmt='%Y/%m/%d-%H:%M:%S',
+                    filename = log_file, filemode='a')
+   LG = logging.getLogger('main')
+   if not is_cron: log_help.screen_handler(LG, lv=lv)
+   LG.info(f'Starting: {__file__}')
+   ##############################################################################
+
    import numpy as np
    from random import randint
    date_req = dt.datetime(2021,5,19,12)   #XXX UTC

@@ -4,17 +4,28 @@
 import log_help
 import logging
 LG = logging.getLogger(__name__)
+import os
+here = os.path.dirname(os.path.realpath(__file__))
+
+def recompile(f90):
+   f90_root = '.'.join(f90.split('.')[0:-1])
+   diff = os.popen(f'cd {here} && diff {f90} .{f90}').read().strip()
+   if len(diff) > 0:
+      LG.warning(f'Compiling {f90}')
+      com = f'cd {here} && f2py3 -c -m {f90_root} {f90} && cp {f90} .{f90} && cd -'
+      LG.warning(com)
+      os.system(com)
+   else: LG.debug('Already compiled')
 
 # Recompile DrJack's Fortran if necessary
-import os
-diff = os.popen('diff drjack.f90 .drjack.f90').read().strip()
-if len(diff) > 0:
-   os.system('f2py3 -c -m drjack drjack.f90 && cp drjack.f90 .drjack.f90')
-else: print('Already compiled')
-import drjack
+try: from . import drjack_num
+except:
+   recompile(f'drjack_num.f90')
+   from . import drjack_num
 import wrf
-import sounding_plot as SP
-import plot_functions as PL
+import plots
+# import sounding_plot as SP
+# import plot_functions as PL
 import numpy as np
 
 from configparser import ConfigParser, ExtendedInterpolation
@@ -39,18 +50,18 @@ def calc_wblmaxmin(linfo, wa, heights, terrain, bldepth):
    """
    Wrapper for DrJack's transposes
    """
-   wblmaxmin = drjack.calc_wblmaxmin(linfo, wa.transpose(),
+   wblmaxmin = drjack_num.calc_wblmaxmin(linfo, wa.transpose(),
                                             heights.transpose(),
                                             terrain.transpose(),
                                             bldepth.transpose())
    return wblmaxmin.transpose()
 
 def calc_wstar( hfx, bldepth ):
-   return drjack.calc_wstar( hfx.transpose(), bldepth.transpose() ).transpose()
+   return drjack_num.calc_wstar( hfx.transpose(), bldepth.transpose() ).transpose()
 
 def calc_blcloudbase( qcloud,  heights, terrain, bldepth, cwbasecriteria,
                                                        maxcwbasem, laglcwbase):
-   blcwbase = drjack.calc_blcloudbase( qcloud.transpose(),
+   blcwbase = drjack_num.calc_blcloudbase( qcloud.transpose(),
                                        heights.transpose(),
                                        terrain.transpose(),
                                        bldepth.transpose(),
@@ -58,7 +69,7 @@ def calc_blcloudbase( qcloud,  heights, terrain, bldepth, cwbasecriteria,
    return blcwbase.transpose()
 
 def calc_hcrit( wstar, terrain, bldepth):
-   hcrit = drjack.calc_hcrit( wstar.transpose(), terrain.transpose(),
+   hcrit = drjack_num.calc_hcrit( wstar.transpose(), terrain.transpose(),
                               bldepth.transpose() )
    return hcrit.transpose()
 
@@ -69,16 +80,16 @@ def calc_blclheight(qvapor,heights,terrain,bldepth,pmb,tc):
    bldepth = bldepth.transpose()
    pmb = pmb.transpose()
    tc = tc.transpose()
-   qvaporblavg = drjack.calc_blavg( qvapor, heights, terrain, bldepth)
+   qvaporblavg = drjack_num.calc_blavg( qvapor, heights, terrain, bldepth)
    # pmb=var = 0.01*(p.values+pb.values) # press is vertical coordinate in mb
-   zblcl = drjack.calc_blclheight( pmb, tc, qvaporblavg, heights, terrain,
+   zblcl = drjack_num.calc_blclheight( pmb, tc, qvaporblavg, heights, terrain,
                                    bldepth )
    return zblcl.transpose()
 
 
 def calc_sfclclheight( pressure, tc, td, heights, terrain, bldepth):
    # Cu Cloudbase ~I~where Cu Potential > 0~P~
-   zsfclcl = drjack.calc_sfclclheight( pressure.transpose(),
+   zsfclcl = drjack_num.calc_sfclclheight( pressure.transpose(),
                                        tc.transpose(), td.transpose(),
                                        heights.transpose(),
                                        terrain.transpose(),
@@ -86,13 +97,13 @@ def calc_sfclclheight( pressure, tc, td, heights, terrain, bldepth):
    return zsfclcl.transpose()
 
 def calc_blavg(X, heights,terrain,bldepth):
-   Xblavgwind = drjack.calc_blavg(X.transpose(), heights.transpose(),
+   Xblavgwind = drjack_num.calc_blavg(X.transpose(), heights.transpose(),
                                                  terrain.transpose(),
                                                  bldepth.transpose())
    return Xblavgwind.transpose()
 
 def calc_bltopwind(uEW,vNS,heights,terrain,bldepth):
-   utop,vtop = drjack.calc_bltopwind(uEW.transpose(),
+   utop,vtop = drjack_num.calc_bltopwind(uEW.transpose(),
                                      vNS.transpose(),
                                      heights.transpose(),
                                      terrain.transpose(),
@@ -101,8 +112,7 @@ def calc_bltopwind(uEW,vNS,heights,terrain,bldepth):
 
 
 
-def sounding(lat,lon,lats,lons,date,ncfile,pressure,tc,td,t0,ua,va,
-                                                 title='',fout='sounding.png'):
+def sounding(lat,lon,lats,lons,date,ncfile,pressure,tc,td,t0,ua,va):
    """
    lat,lon: spatial coordinates for the sounding
    date: UTC date-time for the sounding
@@ -125,30 +135,9 @@ def sounding(lat,lon,lats,lons,date,ncfile,pressure,tc,td,t0,ua,va,
    tdc = td[:,j,i]
    u = ua[:,j,i]
    v = va[:,j,i]
-   # XXX Warning!! averaging!!
-   do_avg = False
-   if do_avg:
-      N = 1
-      i0 = np.clip(i.values-N,0,ni)
-      i1 = np.clip(i.values+N,0,ni)
-      j0 = np.clip(j.values-N,0,nj)
-      j1 = np.clip(j.values+N,0,nj)
-      t0 = t0[j0:j1,i0:i1]
-   else:
-      t0 = t0[j,i]
-   # print('   i:',i0,i1)
-   # print('   j:',j0,j1)
-   # import matplotlib.pyplot as plt
-   # try: plt.style.use('mystyle')
-   # except: pass
-   # fig, ax = plt.subplots()
-   # ax.imshow(pressure[0,:,:], origin='lower')
-   # ax.scatter(i,j,s=100,c='r')
-   # fig.tight_layout()
-   # plt.show()
+   t0 = t0[j,i]
    LG.info('calling skewt plot')
-   PL.skewt_plot(p,tc,tdc,t0,date,u,v,fout=fout,latlon=latlon,title=title)
-   # fig.savefig(fout)
+   return p,tc,tdc,t0,date,u,v,latlon
 
 
 def cross_path(start,end):
@@ -175,6 +164,8 @@ def cross_path(start,end):
    plt.show()
 
 
+def fermi(x,x0,t=1):
+   return 1/(np.exp((x-x0)/(t))+1)
 
 # Obsolete? ####################################################################
 def strip_plot(fig,ax,lims,aspect,fname,dpi=65):
