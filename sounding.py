@@ -88,10 +88,10 @@ def get_sounding(date0, lat0, lon0, data_fol, OUT_fol,
 if __name__ == '__main__':
    import numpy as np
    from random import randint
-   date_req = dt.datetime(2021,5,17,14)   #XXX UTC
+   date_req = dt.datetime(2021,5,19,12)   #XXX UTC
    # from random import choice
    # lat,lon = choice( [(40.1,-3.5), (41.17, -3.624)] )
-   lat,lon = 41.078854,-3.707029
+   lat,lon = 41.078854,-3.707029 # arcones ladera
    fname = 'soundings.csv'
    Points = np.loadtxt(fname,usecols=(0,1),delimiter=',')
    names = np.loadtxt(fname,usecols=(2,),delimiter=',',dtype=str)
@@ -101,7 +101,7 @@ if __name__ == '__main__':
    place = names[ind]
 
    # lat,lon = 41.17, -3.624
-   data_folder = '../../Documents/storage/WRFOUT/Spain6_1/'
+   data_folder = '../../Documents/storage/WRFOUT/Spain6_1'
    OUT_folder = 'plots'
    fout = 'sounding.png'
    dom = 'd02'
