@@ -24,6 +24,7 @@ import wrf_calcs
 import plots
 # # Standard libraries
 from configparser import ConfigParser, ExtendedInterpolation
+from os.path import expanduser
 import numpy as np
 import os
 # import sys
@@ -150,6 +151,19 @@ def getvar(ncfile,name,cache=None):
 #    return overcast, cumulus
 
 
+
+def get_config(fname='plots.ini'):
+   """
+   Return the data for plotting property. Intended to read from plots.ini
+   """
+   LG.info(f'Loading config file: {fname}')
+   # if not os.path.isfile(fname): return None
+   config = ConfigParser(inline_comment_prefixes='#')
+   config._interpolation = ExtendedInterpolation()
+   config.read(fname)
+   #XXX We shouldn't use eval
+   out_folder = expanduser(config['system']['output_folder'])
+   return out_folder
 
 #def scalar_props(fname,section):
 #   """
@@ -441,6 +455,6 @@ if __name__ == '__main__':
    ##############################################################################
 
    ## Output folder
-   #XXX should be in a config file
-   OUT_folder = '../../Documents/storage/PLOTS/Spain6_1'
+   OUT_folder = get_config('plots.ini')
+
    post_process_file(INfname, OUT_folder)
