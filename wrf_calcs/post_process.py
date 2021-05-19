@@ -125,7 +125,8 @@ def find_cross(left,right,p,tc,interp=True):
       right = interp1d(p,right)(ps)
       aux = (np.diff(np.sign(left-right)) != 0)*1
       ind, = np.where(aux==1)
-      ind_cross = np.min(ind)
+      try: ind_cross = np.min(ind)
+      except ValueError: ind_cross = 0
       # ind_cross = np.argmin(np.abs(left-right))
       p_base = ps[ind_cross]
       t_base = right[ind_cross]

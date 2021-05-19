@@ -154,6 +154,10 @@ def skewt_plot(p,tc,tdc,t0,date,u=None,v=None,fout='sounding.png',latlon='',titl
    parcel_prof = mpcalc.parcel_profile(p* units.hPa,
                                        t0 * units.degC,
                                        tdc[0]* units.degC).to('degC')
+   # Plot the parcel profile as a black line
+   skew.plot(p, parcel_prof, 'k', linewidth=1)
+   LG.info('plotted parcel profile')
+
    # Plot cloud base
    # p_base, t_base = find_cross(parcel_prof.magnitude, tc, p, tc, interp=True)
    # p_base = np.max([lcl_pressure.magnitude, p_base])
@@ -164,10 +168,6 @@ def skewt_plot(p,tc,tdc,t0,date,u=None,v=None,fout='sounding.png',latlon='',titl
    m_base = m_base.to('m').magnitude
    skew.plot(p_base, t_base, 'C3o', zorder=100)
    skew.ax.text(t_base, p_base, f'{m_base:.0f}m',ha='left')
-
-   # Plot the parcel profile as a black line
-   skew.plot(p, parcel_prof, 'k', linewidth=1)
-   LG.info('plotted parcel profile')
 
    # shade CAPE and CIN
    skew.shade_cape(p* units.hPa,

@@ -1,8 +1,8 @@
 #!/bin/bash
 RUN_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
-FOLDER=/storage/WRFOUT/Spain6_1
 
+FOLDER=$1
 
 while [ ! -f $RUN_DIR/STOP ]
 do
@@ -13,7 +13,7 @@ do
       file1=`echo $file | sed 's/d01/d02/'`
       ls $file
       ls $file1
-      time (python3 post_process.py $file & python3 post_process.py $file1)
+      time (python3 web_plots.py $file & python3 web_plots.py $file1)
       # mv $file ${FOLDER}/processed/
    done
    echo "No more files"

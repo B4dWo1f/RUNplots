@@ -230,19 +230,21 @@ def post_process_file(INfname,OUT_folder='plots'):
    ##############################################################################
    LG.info('Start Plots')
    ## Soundings #################################################################
-   f_cities = f'{here}/soundings.csv'
-   Yt,Xt = np.loadtxt(f_cities,usecols=(0,1),delimiter=',',unpack=True)
-   names = np.loadtxt(f_cities,usecols=(2,),delimiter=',',dtype=str)
-   soundings = [(n,(la,lo))for n,la,lo in zip(names,Yt,Xt)]
-   for place,point in soundings:
-      lat,lon = point
-      if not (left<lon<right and bottom<lat<top): continue
-      name = f'{OUT_folder}/{HH}_sounding_{place}.png'
-      title = f"{place.capitalize()}"
-      title += f" {(date+UTCshift).strftime('%d/%m/%Y-%H:%M')}"
-      LG.info(f'Sounding {place}')
-      pV,tcV,tdcV,t0V,dateV,uV,vV,latlonV = wrf_calcs.util.sounding(lat,lon,lats,lons,date,ncfile,pressure,tc,td,t2m,ua,va)
-      plots.sounding.skewt_plot(pV,tcV,tdcV,t0V,dateV,uV,vV,fout=name,latlon=latlonV,title=title)
+   f_cities = f'{here}/soundings_{DOMAIN}.csv'
+   try:
+      Yt,Xt = np.loadtxt(f_cities,usecols=(0,1),delimiter=',',unpack=True)
+      names = np.loadtxt(f_cities,usecols=(2,),delimiter=',',dtype=str)
+      soundings = [(n,(la,lo))for n,la,lo in zip(names,Yt,Xt)]
+      for place,point in soundings:
+         lat,lon = point
+         if not (left<lon<right and bottom<lat<top): continue
+         name = f'{OUT_folder}/{HH}_sounding_{place}.png'
+         title = f"{place.capitalize()}"
+         title += f" {(date+UTCshift).strftime('%d/%m/%Y-%H:%M')}"
+         LG.info(f'Sounding {place}')
+         pV,tcV,tdcV,t0V,dateV,uV,vV,latlonV = wrf_calcs.util.sounding(lat,lon,lats,lons,date,ncfile,pressure,tc,td,t2m,ua,va)
+         plots.sounding.skewt_plot(pV,tcV,tdcV,t0V,dateV,uV,vV,fout=name,latlon=latlonV,title=title)
+   except ValueError: pass
 
 
    ## Scalar properties #########################################################
