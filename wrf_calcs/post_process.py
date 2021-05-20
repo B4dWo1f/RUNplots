@@ -28,10 +28,10 @@ LG = logging.getLogger(__name__)
 from configparser import ConfigParser, ExtendedInterpolation
 # import pathlib
 import numpy as np
-# import os
+import os
 # import sys
-# here = os.path.dirname(os.path.realpath(__file__))
-# is_cron = bool( os.getenv('RUN_BY_CRON') )
+here = os.path.dirname(os.path.realpath(__file__))
+is_cron = bool( os.getenv('RUN_BY_CRON') )
 
 import datetime as dt
 fmt = '%d/%m/%Y-%H:%M'

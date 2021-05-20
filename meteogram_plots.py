@@ -17,8 +17,8 @@ import datetime as dt
 import wrf_calcs
 import plots
 
-# ## True unless RUN_BY_CRON is not defined
-# is_cron = bool( os.getenv('RUN_BY_CRON') )
+## True unless RUN_BY_CRON is not defined
+is_cron = bool( os.getenv('RUN_BY_CRON') )
 # import matplotlib as mpl
 # if is_cron:
 #    LG.info('Run from cron. Using Agg backend')
@@ -141,7 +141,7 @@ def get_meteogram(date0, lat0,lon0, data_fol, OUT_fol,place='', dom='d02',
       date1 = date0.replace(hour=h) - UTCshift
       files.append(f'{data_fol}/wrfout_{dom}_{date1.strftime(fmt_wrfout)}:00:00')
    if not all([os.path.isfile(x) for x in files]):
-      print('Missing files!!!')
+      LG.critical('Missing files!!!')
       exit()
    heights, windU,windV, BL,Hcrit,Wstar,Zcu,Zover = [],[],[],[],[],[],[],[]
    PCT_low,PCT_mid,PCT_high = [],[],[]
@@ -194,7 +194,21 @@ def get_meteogram(date0, lat0,lon0, data_fol, OUT_fol,place='', dom='d02',
 
 
 if __name__ == '__main__':
-   date_req = dt.datetime(2021,5,19)
+   ################################# LOGGING ####################################
+   import logging
+   import log_help
+   log_file = here+'/'+'.'.join( __file__.split('/')[-1].split('.')[:-1] ) 
+   log_file = log_file + f'.log'
+   lv = logging.DEBUG
+   logging.basicConfig(level=lv,
+                    format='%(asctime)s %(name)s:%(levelname)s - %(message)s',
+                    datefmt='%Y/%m/%d-%H:%M:%S',
+                    filename = log_file, filemode='a')
+   LG = logging.getLogger('main')
+   if not is_cron: log_help.screen_handler(LG, lv=lv)
+   LG.info(f'Starting: {__file__}')
+   ##############################################################################
+   date_req = dt.datetime(2021,5,22)
    lat,lon = 41.078854,-3.707029 # arcones ladera
    lat,lon = 41.105178018195375, -3.712531733865551     # arcibes cantera
    # lat,lon = 41.078887241417604, -3.7054138385286515  # arcones despegue

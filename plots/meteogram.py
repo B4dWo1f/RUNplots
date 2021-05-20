@@ -2,6 +2,11 @@
 # -*- coding: UTF-8 -*-
 
 import os
+here = os.path.dirname(os.path.realpath(__file__))
+import log_help
+import logging
+LG = logging.getLogger(__name__)
+
 ## True unless RUN_BY_CRON is not defined
 is_cron = bool( os.getenv('RUN_BY_CRON') )
 import matplotlib as mpl
@@ -39,7 +44,6 @@ def meteogram(GND,hours,X,heights,BL,Hcrit,Zover,Zcu,S,U,V,PCT_low,PCT_mid,PCT_h
    Xcloud = np.array([hours for _ in range(img_cloud_pct.shape[0])])
    Ycloud = 0*Xcloud.transpose() + np.array(range(img_cloud_pct.shape[0]))
    Ycloud = Ycloud.transpose()
-   print(img_cloud_pct)
    ax0.contourf(Xcloud,Ycloud,img_cloud_pct, origin='lower',
                                              cmap='Greys', vmin=0, vmax=1)
    ax0.set_yticks(range(img_cloud_pct.shape[0]))

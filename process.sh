@@ -4,6 +4,8 @@ RUN_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
 FOLDER=$1
 
+export RUN_BY_CRON=True
+
 while [ ! -f $RUN_DIR/STOP ]
 do
    echo "Processing The following files:"
