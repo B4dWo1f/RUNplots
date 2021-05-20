@@ -332,5 +332,5 @@ def skewt_plot(p,tc,tdc,t0,date,u=None,v=None,fout='sounding.png',latlon='',titl
    if show: plt.show()
    LG.info('saving')
    fig.savefig(fout, bbox_inches='tight', pad_inches=0.1, dpi=150, quality=90)
-   LG.info('saved')
+   LG.info(f'saved {fout}')
    plt.close('all')

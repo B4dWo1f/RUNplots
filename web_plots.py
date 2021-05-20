@@ -163,7 +163,8 @@ def get_config(fname='plots.ini'):
    config.read(fname)
    #XXX We shouldn't use eval
    out_folder = expanduser(config['system']['output_folder'])
-   return out_folder
+   plots_folder = expanduser(config['system']['plots_folder'])
+   return out_folder, plots_folder
 
 #def scalar_props(fname,section):
 #   """
@@ -444,7 +445,7 @@ if __name__ == '__main__':
    import log_help
    log_file = here+'/'+'.'.join( __file__.split('/')[-1].split('.')[:-1] ) 
    log_file = log_file + f'_{DOMAIN}.log'
-   lv = logging.DEBUG
+   lv = logging.INFO
    logging.basicConfig(level=lv,
                     format='%(asctime)s %(name)s:%(levelname)s - %(message)s',
                     datefmt='%Y/%m/%d-%H:%M:%S',
@@ -455,6 +456,6 @@ if __name__ == '__main__':
    ##############################################################################
 
    ## Output folder
-   OUT_folder = get_config('plots.ini')
+   _,OUT_folder = get_config('plots.ini')
 
    post_process_file(INfname, OUT_folder)
