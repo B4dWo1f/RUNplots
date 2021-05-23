@@ -1,6 +1,11 @@
 #!/usr/bin/python3
 # -*- coding: UTF-8 -*-
 
+"""
+This module contains all the useful functions for extracting information from
+the wrfout files
+"""
+
 import os
 here = os.path.dirname(os.path.realpath(__file__))
 import log_help
@@ -283,6 +288,7 @@ def all_properties(ncfile,use_cache=True):
    LG.debug(f'CIN: {MCIN.shape}')
    LG.debug(f'LCL: {LCL.shape}')
    return bounds,lats,lons,wspd10,wdir10,ua,va,wa, heights, terrain, bldepth,hfx,qcloud,pressure,tc,td,t2m,p,pb,qvapor,MCAPE,rain,blcloudpct,tdif,low_cloudfrac,mid_cloudfrac,high_cloudfrac
+
 
 
 def meteogram_hour(fname,lat,lon):
