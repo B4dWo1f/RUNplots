@@ -15,7 +15,7 @@ LG = logging.getLogger(__name__)
 import wrf
 from netCDF4 import Dataset
 import pathlib
-# import metpy.calc as mpcalc
+import metpy.calc as mpcalc
 # from metpy.units import units
 import numpy as np
 from . import util as ut
@@ -42,6 +42,15 @@ fmt = '%d/%m/%Y-%H:%M'
 UTCshift = dt.datetime.now() - dt.datetime.utcnow()
 UTCshift = dt.timedelta(hours = round(UTCshift.total_seconds()/3600))
 
+
+def get_cache(ncfile):
+   """
+   Prepare WRF cache for faster post-processing
+   """
+   my_vars = ("P","PSFC","PB","PH","PHB","T","QVAPOR","HGT","U","V","W")
+   return wrf.extract_vars(ncfile, wrf.ALL_TIMES, (my_vars))
+
+
 # @log_help.timer(LG)
 def getvar(ncfile,name,cache=None):
    """
@@ -57,7 +66,11 @@ def get_domain(fname):
    return fname.split('/')[-1].replace('wrfout_','').split('_')[0]
 
 
-def read_wrfout_info(fname,OUT_folder):
+def read_wrfout_info(fname):
+   """
+   Returns the file basic information
+   fname: [str] path to file to be read
+   """
    # Read WRF data
    ncfile = Dataset(fname)
 
@@ -84,9 +97,16 @@ def read_wrfout_info(fname,OUT_folder):
    date = dt.datetime.strptime(date[:-3], '%Y-%m-%dT%H:%M:%S.%f')
    LG.info(f'Forecast for: {date}')
 
+   # Ref lat/lon
    reflat = ncfile.getncattr('CEN_LAT')
    reflon = ncfile.getncattr('CEN_LON')
-   return ncfile,DOMAIN,wrfout_folder,reflat,reflon, date,gfs_batch,creation_date
+
+   # bounds contain the bottom-left and upper-right corners of the domain
+   # Notice that bounds will not be the left/right/top/bottom-most
+   # latitudes/longitudes since the grid is only regular in Lambert
+   bounds = wrf.geo_bounds(wrfin=ncfile)
+   return ncfile, DOMAIN, bounds, reflat,reflon, wrfout_folder,\
+          date, gfs_batch, creation_date
 
 
 def convert_units(arr, new_unit):
@@ -279,6 +299,13 @@ def all_properties(ncfile,use_cache=True):
    blcloudpct = low_cloudfrac + mid_cloudfrac + high_cloudfrac
    blcloudpct = np.clip(blcloudpct*100, None, 100)
 
+   # LCL_____________________________________________________________[m] (ny,nx)
+   LCL,_ = mpcalc.lcl(pressure[0,:,:],tc[0,:,:],td[0,:,:])
+   LCL = mpcalc.pressure_to_height_std(LCL) #np.array(lcl_p)*units.hPa)
+   LCL = LCL.to('m')
+   LCLdif = bldepth + terrain - LCL.magnitude
+   null = 0. * LCL
+   LCL = np.where( LCLdif>0, LCL, null )
    # CAPE_________________________________________________________[J/kg] (ny,nx)
    cape2d = getvar(ncfile, "cape_2d", cache=my_cache)
    MCAPE = cape2d[0,:,:]  # CAPE
@@ -368,6 +395,59 @@ def meteogram_hour(fname,lat,lon):
    lon = lons[j,i].values
    return lat,lon, hs, u, v, pblh, hcrit, wstar,gnd, zsfclcl, zblcl,\
           low_cloudfrac,mid_cloudfrac,high_cloudfrac
+
+
+def sounding(ncfile):
+   """
+   Extract the necessary variables for calculating a sounding
+   """
+   # Lats, Lons
+   lats = getvar(ncfile, "lat")
+   lons = getvar(ncfile, "lon")
+   # Date in UTC
+   # prefix to save files
+   date = str(getvar(ncfile, 'times').values)
+   date = dt.datetime.strptime(date[:-3], '%Y-%m-%dT%H:%M:%S.%f')
+   # bounds = wrf.geo_bounds(wrfin=ncfile)
+   # # useful to setup the extent of the maps
+   # left   = bounds.bottom_left.lon
+   # right  = bounds.top_right.lon
+   # bottom = bounds.bottom_left.lat
+   # top    = bounds.top_right.lat
+
+   # if (not date == date0) or\
+   #    (not left < lon0 < right) or\
+   #    (not bottom < lat0 < top):
+   #    LG.critical('Error selecting wrfout file!!')
+   #    LG.debug(date,date0, date == date0)
+   #    LG.debug(type(date),type(date0))
+   #    LG.debug(left,lon0,right,left < lon0 < right)
+   #    LG.debug(bottom,lat0,top,bottom < lat0 < top)
+   #    # XXX raise OutsideDomainError
+   # else:
+   #    LG.debug('Correct wrfout')
+   # Pressure___________________________________________________[hPa] (nz,ny,nx)
+   pressure = getvar(ncfile, "pressure")
+   # Vertical levels of the grid__________________________________[m] (nz,ny,nx)
+   # Also called Geopotential Heights. heights[0,:,:] is the first level, 15m agl   # XXX why 15 and not 10?
+   heights = getvar(ncfile, "height")
+   # Terrain topography used in the calculations_____________________[m] (ny,nx)
+   terrain = getvar(ncfile, "ter")
+   # Temperature_________________________________________________[°C] (nz,ny,nx)
+   tc = getvar(ncfile, "tc")
+   # print('tc',tc.shape)
+   # Temperature Dew Point_______________________________________[°C] (nz,ny,nx)
+   td = getvar(ncfile, "td")
+   # print('td',td.shape)
+   # Temperature 2m above ground________________________________[K-->°C] (ny,nx)
+   t2m = getvar(ncfile, "T2")
+   t2m = convert_units(t2m, 'degC')
+   # Wind_______________________________________________________[m/s] (nz,ny,nx)
+   ua = getvar(ncfile, "ua")  # U wind component
+   va = getvar(ncfile, "va")  # V wind component
+   return date,lats,lons,terrain,pressure,heights,tc,td,t2m,ua,va
+
+
 
 #def duplicate_first_row(M, value=None):
 #   """

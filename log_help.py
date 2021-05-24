@@ -85,6 +85,19 @@ def timer(lg):
       return inner
    return real_timer
 
+def inout(lg):
+   """
+   Logs the execution time of a certain funcion to the provided logger
+   """
+   def real_timer(wrapped):
+      def inner(*args, **kwargs):
+         lg.debug(f'Entering {wrapped.__name__}')
+         ret = wrapped(*args, **kwargs)
+         lg.debug(f'Finished {wrapped.__name__}')
+         return ret
+      return inner
+   return real_timer
+
 
 def deprecated(lg):
    """
@@ -92,7 +105,7 @@ def deprecated(lg):
    """
    def wrapper(wrapped):
       def inner(*args, **kwargs):
-         lg.warning('Deprecated use of '+wrapped.__name__)
+         lg.warning(f'Deprecated use of {wrapped.__name__}')
          ret = wrapped(*args, **kwargs)
          return ret
       return inner

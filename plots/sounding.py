@@ -58,32 +58,55 @@ def get_bottom_temp(ax,T,P):
 
 
 @log_help.timer(LG)
+@log_help.inout(LG)
 # def skewt_plot(p,tc,tdc,t0,date,u=None,v=None,fout='sounding.png',latlon='',title='',show=False):
-def skewt_plot(p,tc,tdc,t0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,Xcloud,Ycloud,cloud,lcl_p,lcl_t,parcel_prof,fout='sounding.png',latlon='',title='',rot=30,show=False):
+def skewt_plot(p,tc,tdc,t0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,Xcloud,Ycloud,cloud,lcl_p,lcl_t,parcel_prof,fout='sounding.png',latlon='',title='',rot=30,interpol=True,show=False):
    """
    Layout             ________________________
-                  150|                 |C|Hod||<-- ax_hod
-   ax1=skew_top.ax-->|                 |L|___||
-                  500|_________________|O|  I |
-                  500|                 |U|  N |
+                 Pmin|                 |C|Hod |<-- ax_hod
+   ax1=skew_top.ax-->|_________________|L|____|
+                 Pmed|                 |O|  I |
+                 Pmed|                 |U|  N |
                      |                 |D|W T |
                      |                 |S|I E |
                      |    SOUNDING     | |N N |
                      |                 | |D S |
                      |                 | |  I |
                      |                 | |  T |
-                 1000|_________________|_|__Y_|
+                 Pmax|_________________|_|__Y_|
                        ^                ^    ^
                 ax0=skew_bot.ax  ax_clouds  ax_wind
-   h: heights
-   p: pressure
-   tc: Temperature [C]
-   tdc: Dew point [C]
-   date: date of the forecast
-   u,v: u,v wind components
-   adapted from:
+   p: [pint.quantity] (nz,) vector of vertical pressures [hPa]
+   tc: [pint.quantity] (nz,) vector of vertical temperatures [°C]
+   tdc: [pint.quantity] (nz,) vector of vertical dew points [°C]
+   t0: [pint.quantity] () temperature 2m above ground [°C]
+   date: [datetime.datetime] Optional. only necessary if title is not provided
+   u,v: [pint.quantity] (nz,) vertical U and V wind components [km/h]
+   gnd: OBSOLETTE. Ground level
+   cu_base_p: [pint.quantity] () pressure of the cumulus base [hPa]
+   cu_base_m: [pint.quantity] () altitude of the cumulus base [m]
+   cu_base_t: [pint.quantity] () temperature of the cumulus base [°C]
+   Xcloud: [np.array] (n,2) Grid of X positions for the cloud matrix.
+                            n is an arbitrary dimension
+   Ycloud: [np.array] (n,2) Grid of Y positions for the cloud matrix.
+                            n is an arbitrary dimension
+   cloud : [np.array] (n,2) Cloud matrix representing two columns.
+                            cloud[:,0] represents overcast probabilty
+                            cloud[:,1] represents cumulus extension
+   lcl_p: [pint.quantity] () pressure of the LCL [hPa]
+   lcl_t: [pint.quantity] () temperature of the LCL [°C]
+   parcel_prof: [pint.quantity] (nz,) trajectory of a heated parcel of air [°C]
+   fout: [str] filename to save the plot
+   latlon: [str] optional. To appear in a small box in the upper right corner
+   title: [str] optional. If missing, the date is used to generate the title
+   rot: [float] rotation of the Y axis (temperature skewness)
+   interpol: [bool] Interpolate vertical levels (tipically ~60) to 500 points.
+                    Its main effect is visible in the wind intensity plot
+   show: [bool] whether to show the interactive matplotlib figure
+   Aesthetics adapted from:
    https://geocat-examples.readthedocs.io/en/latest/gallery/Skew-T/NCL_skewt_3_2.html#sphx-glr-gallery-skew-t-ncl-skewt-3-2-py
    """
+   # Setup matplotlibrc parameters
    mpl.rcParams['axes.facecolor'] = (1,1,1,1)
    mpl.rcParams['figure.facecolor'] = (1,1,1,1)
    mpl.rcParams["savefig.facecolor"] = (1,1,1,1)
@@ -92,6 +115,8 @@ def skewt_plot(p,tc,tdc,t0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,Xcloud,Ycl
    mpl.rcParams['mathtext.rm'] = 'serif'
    mpl.rcParams['figure.dpi'] = 150
    mpl.rcParams['axes.labelsize'] = 'large' # fontsize of the x any y labels
+
+   # Altitude breaking pressure
    Pmin = 150 * p.units   ############# upper limit
    n_min = np.argmin(np.abs(p-Pmin))
    Pmin = p[n_min]
@@ -103,11 +128,12 @@ def skewt_plot(p,tc,tdc,t0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,Xcloud,Ycl
    Tmed = tc[n_med]
    TDmed = tdc[n_med]
    Pmax = 1000 * p.units  ############# lower limit
+   LG.info(f'Breaking vertical levels: {Pmax:.0f}, {Pmed:.0f}, {Pmin:.0f}')
 
-   LG.info('Inside skewt plot')
+
    #############
-   #LG.warning('Interpolating sounding variables')
    Ninterp = 250
+   LG.warning(f'Interpolating sounding variables to {Ninterp} levels')
    ps = np.linspace(np.max(p),np.min(p), Ninterp)
    ftc = interp1d(p,tc)
    ftdc = interp1d(p,tdc)
@@ -122,11 +148,9 @@ def skewt_plot(p,tc,tdc,t0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,Xcloud,Ycl
    v = fv(ps) * v.units
    n_med = np.argmin(np.abs(p-500*p.units))
    #############
+
    # Grid plot
-   LG.info('creating figure')
    fig = plt.figure(figsize=(11, 13))
-   LG.info('created figure')
-   LG.info('creating axis')
    gs = gridspec.GridSpec(2, 3, height_ratios=[1,4.2], width_ratios=[6,0.5,1.8])
    fig.subplots_adjust(wspace=0.,hspace=0.)
 
@@ -134,12 +158,12 @@ def skewt_plot(p,tc,tdc,t0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,Xcloud,Ycl
    bbox_hod_cardinal = dict(ec='none',fc='white', alpha=0.5)
    bbox_barbs = dict(emptybarb=0.075, width=0.1, height=0.2)
    xloc = 0.95
+
 ## BOTTOM PLOTS #################################################################
 ### Main Plot
+   LG.info('Starting main plot')
    # Bottom left plot with the main sounding zoomed in to lower levels.
-   LG.info('Creatin SkewT')
    skew_bot = SkewT(fig, rotation=rot, subplot=gs[1,0])
-   LG.info('Created SkewT')
 
    # Plot Data
    ## T and Tdew vs pressure
@@ -208,10 +232,11 @@ def skewt_plot(p,tc,tdc,t0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,Xcloud,Ycl
    # X axis
    # Find xlims iteratively since the aspect ratio of the metpy.skewT plots
    # is set to auto. 
+   LG.info('Adjusting X axis limits bottom sounding')
    difmin, difmax = 1000,1000
    tmin_old, tmax_old = skew_bot.ax.get_xlim()
    cont = 0
-   while cont < 30 and not (difmin < 1e-2 and difmax < 1e-2):
+   while cont < 30 and not (difmin < .5 and difmax < .5):
       tmin = np.min([get_bottom_temp(skew_bot.ax,TDmed,Pmed),
                      get_bottom_temp(skew_bot.ax,tdc[0],p[0])])
       tmax = np.max([get_bottom_temp(skew_bot.ax,Tmed,Pmed),
@@ -222,27 +247,34 @@ def skewt_plot(p,tc,tdc,t0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,Xcloud,Ycl
       difmin = abs(tmin - tmin_old)
       difmax = abs(tmax - tmax_old)
       skew_bot.ax.set_xlim(tmin,tmax)
+      LG.debug(f'T range: {tmin:.0f} - {tmax:.0f}')
       tmin_old = tmin
       tmax_old = tmax
       cont += 1
       skew_bot.ax.set_xlabel('Temperature (°C)')
+   LG.info(f'X limits adjusted to {tmin:.0f} - {tmax:.0f} in {cont} iterations')
 
    skew_bot.ax.xaxis.set_major_locator(MultipleLocator(5))
    ## Change the style of the gridlines
    skew_bot.ax.grid(True, which='major', axis='both',
             color='tan', linewidth=1.5, alpha=0.5)
+   LG.info('Done main plot')
 
 ### Clouds
+   LG.info('Plotting clouds bottom')
    ax_cloud_bot = plt.subplot(gs[1,1], sharey=skew_bot.ax, zorder=-1)
    ax_cloud_bot.contourf(Xcloud, Ycloud, cloud, cmap='Greys',vmin=0,vmax=1)
-   ax_cloud_bot.text(.25,0,'O',ha='center',va='bottom',transform=ax_cloud_bot.transAxes)
-   ax_cloud_bot.text(.75,0,'C',ha='center',va='bottom',transform=ax_cloud_bot.transAxes)
+   for ix,txt in zip([.25,.75], ['O','C']):
+      ax_cloud_bot.text(ix,0,txt,ha='center',va='bottom',
+                                           transform=ax_cloud_bot.transAxes)
    plt.setp(ax_cloud_bot.get_xticklabels(), visible=False)
    plt.setp(ax_cloud_bot.get_yticklabels(), visible=False)
    ax_cloud_bot.set_ylabel('')
    ax_cloud_bot.grid(False)
+   LG.info('Done clouds bottom')
 
 ### Wind Plot
+   LG.info('Plotting wind bottom')
    ax_wind_bot  = plt.subplot(gs[1,2], sharey=skew_bot.ax)
    wspd = np.sqrt(u*u + v*v)
    ax_wind_bot.scatter(wspd, p, c=p, cmap=mcmaps.HEIGHTS, zorder=10)
@@ -261,6 +293,7 @@ def skewt_plot(p,tc,tdc,t0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,Xcloud,Ycl
    plt.setp(ax_wind_bot.get_yticklabels(), visible=False)
    ax_wind_bot.set_ylabel('')
    ax_wind_bot.grid(True, which='minor', axis='x',color=(.8,.8,.8))
+   LG.info('Done wind bottom')
 
 
 
@@ -268,14 +301,19 @@ def skewt_plot(p,tc,tdc,t0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,Xcloud,Ycl
 ## TOP PLOTS ####################################################################
 ### Sounding upper levels
    # Automatic skew selection to visualize all the data
+   LG.info('Plotting sounding top')
    isin = False  # Both Td and T are within the drawn limits
    rot = 89
    sign = 1
    delta_rot = 1
    i = 0
+   LG.info('Adjusting rotation for top sounding')
+   LG.debug(f'Initial skewness: {rot}')
    while not isin:
       try: skew_top.ax.remove()
       except UnboundLocalError: pass
+      rotation = rot+sign*i*delta_rot
+      LG.debug(f'Trying skewness: {rotation:.0f}')
       skew_top = SkewT(fig, rotation=rot+sign*i*delta_rot, subplot=gs[0,0])
  
       # Plot Data
@@ -292,11 +330,13 @@ def skewt_plot(p,tc,tdc,t0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,Xcloud,Ycl
 
       T0,T1 = skew_top.ax.upper_xlim
       isin = (T0 <= TDmin.magnitude <= Tmin.magnitude <= T1)
+      LG.debug(f'Upper data is visible: {isin}')
       sign = T0-TDmin.magnitude
       sign /= abs(sign)
       i+= 1
    skew_top.ax.xaxis.set_major_locator(MultipleLocator(5))
    skew_top.ax.set_xlabel('')
+   LG.info('Top sounding rotation decided: {rotation}')
 
    ## Windbarbs
    n = Ninterp//20
@@ -332,14 +372,17 @@ def skewt_plot(p,tc,tdc,t0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,Xcloud,Ycl
    plt.setp(skew_top.ax.get_xticklabels(), visible=False)
 
 ### Clouds
+   LG.info('Plotting clouds top')
    ax_cloud_top = plt.subplot(gs[0,1], sharey=skew_top.ax, zorder=-1)
    ax_cloud_top.contourf(Xcloud, Ycloud, cloud, cmap='Greys',vmin=0,vmax=1)
    plt.setp(ax_cloud_top.get_xticklabels(), visible=False)
    plt.setp(ax_cloud_top.get_yticklabels(), visible=False)
    ax_cloud_top.set_ylabel('')
    ax_cloud_top.grid(False)
+   LG.info('Done clouds top')
 
 ### Wind Plot. Hodograph
+   LG.info('Plotting hodograph')
    ax_wind_top  = plt.subplot(gs[0,2])
    ax_hod = ax_wind_top
    ax_hod.set_yticklabels([])
@@ -355,7 +398,8 @@ def skewt_plot(p,tc,tdc,t0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,Xcloud,Ycl
    # Plot a line colored by pressure (altitude)
    h.plot_colormapped(-u, -v, p, cmap=mcmaps.HEIGHTS)
    ax_hod.grid(False)
-   LG.info('Plotted wind')
+   LG.info('Done hodograph')
+   LG.info('Done wind')
 
 ## COMMON #######################################################################
    # Ground
