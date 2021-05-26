@@ -1,6 +1,10 @@
 #!/usr/bin/python3
 # -*- coding: UTF-8 -*-
 
+from random import random
+from time import sleep
+sleep(10*random())
+
 import common
 from os.path import expanduser
 import wrf_calcs.util as ut
