@@ -16,27 +16,11 @@ import wrf
 from netCDF4 import Dataset
 import pathlib
 import metpy.calc as mpcalc
-# from metpy.units import units
+#      # from metpy.units import units
 import numpy as np
 from . import util as ut
 import datetime as dt
-import datetime as dt
 fmt = '%d/%m/%Y-%H:%M'
-
-# ## True unless RUN_BY_CRON is not defined
-# is_cron = bool( os.getenv('RUN_BY_CRON') )
-# import matplotlib as mpl
-# if is_cron:
-#    LG.info('Run from cron. Using Agg backend')
-#    mpl.use('Agg')
-# import matplotlib.pyplot as plt
-# try: plt.style.use('mystyle')
-# except: pass
-# from matplotlib import gridspec
-# from matplotlib.patches import Rectangle
-# from matplotlib.ticker import MultipleLocator
-# from matplotlib.ticker import ScalarFormatter, FormatStrFormatter
-# from colormaps import WindSpeed
 
 # Get UTCshift automatically
 UTCshift = dt.datetime.now() - dt.datetime.utcnow()
@@ -48,10 +32,10 @@ def get_cache(ncfile):
    Prepare WRF cache for faster post-processing
    """
    my_vars = ("P","PSFC","PB","PH","PHB","T","QVAPOR","HGT","U","V","W")
+   LG.debug(f'Cached variables: {my_vars}')
    return wrf.extract_vars(ncfile, wrf.ALL_TIMES, (my_vars))
 
 
-# @log_help.timer(LG)
 def getvar(ncfile,name,cache=None):
    """
    wrapper for wrf.getvar to include debug messages
@@ -62,20 +46,29 @@ def getvar(ncfile,name,cache=None):
    return aux
 
 
-def get_domain(fname):
-   return fname.split('/')[-1].replace('wrfout_','').split('_')[0]
-
-
+@log_help.timer(LG)
 def read_wrfout_info(fname):
    """
    Returns the file basic information
    fname: [str] path to file to be read
+   Returns
+   ncfile: [netCDF4.Dataset] WRF data
+   DOMAIN: [str] corresponding domain name (d01, d02,...)
+   bounds: [tuple] bottom left and upper right corners of the domain
+   reflat,reflon: [float] Projection's reference latitude and longitude
+                          more on Lambert Conformal:
+               https://scitools.org.uk/cartopy/docs/latest/crs/projections.html
+   wrfout_folder: [str] path to folder containing all the wrfout files
+   date: [datetime] valid date of data
+   gfs_batch: [datetime] GFS batch used to calculate the data
+   creation_date: [datetime] date when the calculations were made
+                             (creation of the fname file)
    """
    # Read WRF data
    ncfile = Dataset(fname)
 
    # Get domain
-   DOMAIN = get_domain(fname)
+   DOMAIN = ut.get_domain(fname)
    wrfout_folder = os.path.dirname(os.path.abspath(fname))
    LG.info(f'WRFOUT file: {fname}')
    LG.info(f'WRFOUT folder: {wrfout_folder}')
@@ -103,7 +96,7 @@ def read_wrfout_info(fname):
 
    # bounds contain the bottom-left and upper-right corners of the domain
    # Notice that bounds will not be the left/right/top/bottom-most
-   # latitudes/longitudes since the grid is only regular in Lambert
+   # latitudes/longitudes since the grid is only regular in Lambert Conformal
    bounds = wrf.geo_bounds(wrfin=ncfile)
    return ncfile, DOMAIN, bounds, reflat,reflon, wrfout_folder,\
           date, gfs_batch, creation_date
@@ -144,22 +137,22 @@ def clouds_rain(ncfile,my_cache=None):
 
 
 @log_help.timer(LG)
-def wind(ncfile,my_cache=None):
+def wind(ncfile, cache=None):
    """
    Wind related variables
-   ua,va,wa: [m/s] (nz,ny,nx) X,Y,Z components of the wind for every node
-                              in the model
+   u,v,w,u10,v10: [m/s] (nz,ny,nx) X,Y,Z components of the wind for every node
+                                   in the model
+   wspd,wdir: [m/s] (ny,nx) speed and direction of the wind at 10m agl
    wspd10,wdir10: [m/s] (ny,nx) speed and direction of the wind at 10m agl
+   *Notice: w is not Earth-rotated
    """
-   # Wind_______________________________________________________[m/s] (nz,ny,nx)
-   ua = getvar(ncfile, "ua", cache=my_cache)  # U wind component
-   va = getvar(ncfile, "va", cache=my_cache)  # V wind component
-   wa = getvar(ncfile, "wa", cache=my_cache)  # W wind component
-   # Wind at 10m___________________________________________________[m/s] (ny,nx)
-   wspd10,wdir10 = wrf.g_uvmet.get_uvmet10_wspd_wdir(ncfile)
-   LG.debug(f'wspd10: [{wspd10.units}] {wspd10.shape}')
-   LG.debug(f'wdir10: [{wdir10.units}] {wdir10.shape}')
-   return ua,va,wa, wspd10,wdir10
+   u,v = getvar(ncfile, 'uvmet', cache=cache)
+   w = getvar(ncfile, 'wa', cache=cache)
+   u10,v10 = getvar(ncfile, 'uvmet10', cache=cache)
+   wspd,wdir = getvar(ncfile, 'uvmet_wspd_wdir', cache=cache)
+   wspd10,wdir10 = getvar(ncfile, 'uvmet10_wspd_wdir', cache=cache)
+   return u,v,w,u10,v10,wspd,wdir,wspd10,wdir10
+
 
 @log_help.timer(LG)
 def temperatures(ncfile,my_cache=None):
@@ -179,6 +172,8 @@ def temperatures(ncfile,my_cache=None):
    t2m = getvar(ncfile, "T2", cache=my_cache)
    t2m = convert_units(t2m, 'degC')
    LG.debug(f't2m: [{t2m.units}] {t2m.shape}')
+   # Temperature Dew Point 2m above ground__________________________[°C] (ny,nx)
+   td2m = getvar(ncfile, "td2")
    # SOIL TEMPERATURE AT LOWER BOUNDARY_________________________[K-->°C] (ny,nx)
    tmn = getvar(ncfile, "TMN", cache=my_cache)
    tmn = convert_units(tmn, 'degC')
@@ -187,7 +182,8 @@ def temperatures(ncfile,my_cache=None):
    tsk = getvar(ncfile, "TSK", cache=my_cache)
    tsk = convert_units(tsk, 'degC')
    LG.debug(f'tsk: [{tsk.units}] {tsk.shape}')
-   return tc,td,t2m,tmn,tsk
+   return tc,td,t2m,td2m,tmn,tsk
+
 
 
 @log_help.timer(LG)
@@ -232,169 +228,65 @@ def model_variables(ncfile,my_cache=None):
    # Planetary Boundary Layer Height_________________________________[m] (ny,nx)
    # Atmospheric Boundary layer thickness above ground
    bldepth = getvar(ncfile, "PBLH", cache=my_cache)
-   return lats,lons, bounds, terrain, heights, pressure,p,pb,slp,bldepth
+   # Atmospheric Boundary layer thickness above sea level
+   pblh = terrain + bldepth
+   return lats,lons, bounds, terrain, heights, pressure,p,pb,slp,bldepth, pblh
 
 
 @log_help.timer(LG)
-def all_properties(ncfile,use_cache=True):
+def all_properties(ncfile, my_cache=None):
    """
    Read all the WRF properties and diagnostic variables.
    use_cache may accelerate around 20% performance
    """
-   if use_cache:
-      my_vars = ("P","PSFC","PB","PH","PHB","T","QVAPOR","HGT","U","V","W")
-      my_cache = wrf.extract_vars(ncfile, wrf.ALL_TIMES, (my_vars))
-   else: my_cache = None
+   if my_cache == None: my_cache = get_cache(ncfile)
+   else: LG.debug('Cache was provided')
    LG.debug('Reading WRF data')
 
    ### Read region data
    lats,lons, bounds, terrain, heights,\
-             pressure,p,pb,slp,bldepth = model_variables(ncfile,my_cache)
+             pressure,p,pb,slp,bldepth,pblh = model_variables(ncfile, my_cache)
 
-   tc,td,t2m,tmn,tsk = temperatures(ncfile,my_cache)
-   tdif = tsk-tmn
-   LG.debug(f'tsk: {tsk.shape}')
+   ## Temperature
+   tc,td,t2m,td2m,tmn,tsk = temperatures(ncfile, my_cache)
 
-   ua,va,wa, wspd10,wdir10 = wind(ncfile,my_cache)
-   # ua10 = -wspd10 * np.sin(np.radians(wdir10))
-   # va10 = -wspd10 * np.cos(np.radians(wdir10))
+   ## Wind
+   u, v, w, u10, v10, wspd, wdir, wspd10, wdir10 = wind(ncfile, my_cache)
 
    ## Necessary for DrJack's routines
    # Surface sensible heat flux in________________________________[W/m²] (ny,nx)
    hfx = getvar(ncfile, "HFX", cache=my_cache) 
-
    # Cloud water mixing ratio________________________________[Kg/kg?] (nz,ny,nx)
    qcloud = getvar(ncfile, "QCLOUD", cache=my_cache)
-
    # Water vapor mixing ratio______________________________________[] (nz,ny,nx)
    qvapor = getvar(ncfile, "QVAPOR", cache=my_cache)
-
-   # import matplotlib.pyplot as plt
-   # try: plt.style.use('mystyle')
-   # except: pass
-   # fig, ax = plt.subplots()
-   # ax1 = ax.twiny()
-   # ax.plot( tc[:,171,234], pressure[:,171,234], label='curva de estado')
-   # ax.plot( td[:,171,234], pressure[:,171,234], label='curva de rocio')
-   # ax1.plot(rh[:,171,234], pressure[:,171,234], 'k--',label='RH')
-   # ax.set_xlabel('Pressure')
-   # ax.set_ylabel('Temperature')
-   # ax1.set_ylabel('RH (%)')
-   # ax.scatter([20 for _ in pressure[:,171,234]],pressure[:,171,234],c=rh[:,171,234],cmap='Greys')
-   # ax.legend()
-   # ax.set_ylim(1000,150)
-   # ax.set_xlim(-80,25)
-   # fig.tight_layout()
-   # fig, ax = plt.subplots()
-   # ax.plot(rh[:,171,234])
-   # ax1 = ax.twinx()
-   # dif = tc[:,171,234]-td[:,171,234]
-   # ax1.plot(np.max(dif)-dif,'C1',label='$T_c - T_d$')
-   # ax1.legend()
-   # fig.tight_layout()
-   # plt.show()
-   # exit()
 
    low_cloudfrac,mid_cloudfrac,high_cloudfrac,rain = clouds_rain(ncfile,my_cache)
    blcloudpct = low_cloudfrac + mid_cloudfrac + high_cloudfrac
    blcloudpct = np.clip(blcloudpct*100, None, 100)
 
    # LCL_____________________________________________________________[m] (ny,nx)
-   LCL,_ = mpcalc.lcl(pressure[0,:,:],tc[0,:,:],td[0,:,:])
+   LCL,_ = mpcalc.lcl(pressure[0,:,:], t2m, td2m)
    LCL = mpcalc.pressure_to_height_std(LCL) #np.array(lcl_p)*units.hPa)
    LCL = LCL.to('m')
-   LCLdif = bldepth + terrain - LCL.magnitude
-   null = 0. * LCL
-   LCL = np.where( LCLdif>0, LCL, null )
+   LCL = maskPot0(LCL.magnitude, pblh) * LCL.units
    # CAPE_________________________________________________________[J/kg] (ny,nx)
    cape2d = getvar(ncfile, "cape_2d", cache=my_cache)
    MCAPE = cape2d[0,:,:]  # CAPE
    MCIN = cape2d[1,:,:]   # CIN
-   LCL = cape2d[2,:,:]    # Cloud base when forced lifting occurs
    LG.debug(f'CAPE: {MCAPE.shape}')
    LG.debug(f'CIN: {MCIN.shape}')
    LG.debug(f'LCL: {LCL.shape}')
-   return bounds,lats,lons,wspd10,wdir10,ua,va,wa, heights, terrain, bldepth,hfx,qcloud,pressure,tc,td,t2m,p,pb,qvapor,MCAPE,rain,blcloudpct,tdif,low_cloudfrac,mid_cloudfrac,high_cloudfrac
+   return lats,lons,u,v,w,u10,v10,wspd,wdir,wspd10,wdir10,pressure,heights,terrain,bldepth,pblh,hfx,qcloud,qvapor,tc,td,t2m,td2m,tsk,MCAPE,rain,low_cloudfrac,mid_cloudfrac,high_cloudfrac,blcloudpct
 
 
-
-def meteogram_hour(fname,lat,lon):
-   ncfile = Dataset(fname)
-   my_vars = ("P", "PSFC", "PB", "PH", "PHB","T", "QVAPOR", "HGT", "U", "V","W")
-   my_cache = wrf.extract_vars(ncfile, wrf.ALL_TIMES, (my_vars))
-   # Lats, Lons
-   lats = getvar(ncfile, "lat",cache=my_cache)
-   lons = getvar(ncfile, "lon",cache=my_cache)
-   # Pressure___________________________________________________[hPa] (nz,ny,nx)
-   pressure = getvar(ncfile, "pressure", cache=my_cache)
-   # Perturbation pressure_______________________________________[Pa] (nz,ny,nx)
-   p = getvar(ncfile, "P", cache=my_cache)
-   # Base state pressure_________________________________________[Pa] (nz,ny,nx)
-   pb = getvar(ncfile, "PB", cache=my_cache)
-   # Water vapor mixing ratio______________________________________[] (nz,ny,nx)
-   qvapor = getvar(ncfile, "QVAPOR", cache=my_cache)
-   # Planetary Boundary Layer Height_________________________________[m] (ny,nx)
-   # Atmospheric Boundary layer thickness above ground
-   bldepth = getvar(ncfile, "PBLH", cache=my_cache)
-   # Surface sensible heat flux in________________________________[W/m²] (ny,nx)
-   hfx = getvar(ncfile, "HFX", cache=my_cache) 
-   # Vertical levels of the grid__________________________________[m] (nz,ny,nx)
-   heights = getvar(ncfile, "height", cache=my_cache) # = z
-   # Topography of the terrain ______________________________________[m] (ny,nx)
-   terrain = getvar(ncfile, "ter", cache=my_cache) # = HGT
-   # Wind_______________________________________________________[m/s] (nz,ny,nx)
-   ua = getvar(ncfile, "ua", cache=my_cache)  # U wind component
-   va = getvar(ncfile, "va", cache=my_cache)  # V wind component
-   wa = getvar(ncfile, "wa", cache=my_cache)  # W wind component
-   # Temperature_________________________________________________[°C] (nz,ny,nx)
-   tc = getvar(ncfile, "tc", cache=my_cache)
-   # Temperature Dew Point_______________________________________[°C] (nz,ny,nx)
-   td = getvar(ncfile, "td", cache=my_cache)
-   # Thermal Updraft Velocity (W*)_________________________________[m/s] (ny,nx)
-   wstar = ut.calc_wstar( hfx, bldepth )
-   # Height of Critical Updraft Strength (hcrit)_____________________[m] (ny,nx)
-   hcrit = ut.calc_hcrit( wstar, terrain, bldepth)
-   # Height of SFC.LCL_______________________________________________[m] (ny,nx)
-   # Cu Cloudbase ~I~where Cu Potential > 0~P~
-   zsfclcl = ut.calc_sfclclheight( pressure, tc, td, heights, terrain, bldepth )
-   # OvercastDevelopment Cloudbase__________________________________[m?] (ny,nx)
-   pmb = 0.01*(p.values+pb.values) # press is vertical coordinate in mb
-   zblcl = ut.calc_blclheight(qvapor,heights,terrain,bldepth,pmb,tc)
-   # Mask zsfclcl, zblcl________________________________________________________
-   ## Mask Cu Pot > 0
-   zsfclcldif = bldepth + terrain - zsfclcl
-   null = 0. * zsfclcl
-   # cu_base_pote = np.where(zsfclcldif>0, zsfclcl, null)
-   zsfclcl = np.where(zsfclcldif>0, zsfclcl, null)
-   ## Mask Overcast dev Pot > 0
-   zblcldif = bldepth + terrain - zblcl
-   null = 0. * zblcl
-   # over_base_pote = np.where(zblcldif>0, zblcl, null)
-   zblcl = np.where(zblcldif>0, zblcl, null)
-   # Clouds__________________________________________________________[%] (ny,nx)
-   low_cloudfrac  = getvar(ncfile, "low_cloudfrac", cache=my_cache)
-   mid_cloudfrac  = getvar(ncfile, "mid_cloudfrac", cache=my_cache)
-   high_cloudfrac = getvar(ncfile, "high_cloudfrac", cache=my_cache)
-   # Thermalling Height______________________________________________[m] (ny,nx)
-   hglider = np.minimum(np.minimum(hcrit,zsfclcl), zblcl)
-   ## Point #####################################################################
-   i,j = wrf.ll_to_xy(ncfile, lat, lon)  # returns w-e, n-s
-   pblh  = bldepth[j,i].values
-   hs = np.reshape(heights[:,j,i].values, (-1,1))
-   u  = np.reshape(ua[:,j,i].values, (-1,1))
-   v  = np.reshape(va[:,j,i].values, (-1,1))
-   hcrit = hcrit[j,i]
-   wstar = wstar[j,i]
-   zblcl = zblcl[j,i]
-   zsfclcl = zsfclcl[j,i]
-   low_cloudfrac = low_cloudfrac[j,i].values
-   mid_cloudfrac = mid_cloudfrac[j,i].values
-   high_cloudfrac = high_cloudfrac[j,i].values
-   gnd = terrain[j,i].values
-   lat = lats[j,i].values
-   lon = lons[j,i].values
-   return lat,lon, hs, u, v, pblh, hcrit, wstar,gnd, zsfclcl, zblcl,\
-          low_cloudfrac,mid_cloudfrac,high_cloudfrac
+def maskPot0(M, pblh):
+   """
+   input: arrays
+   """
+   Mdif = pblh - M
+   null = 0. * M
+   return np.where( Mdif>0, M, null )
 
 
 def sounding(ncfile):
@@ -408,24 +300,6 @@ def sounding(ncfile):
    # prefix to save files
    date = str(getvar(ncfile, 'times').values)
    date = dt.datetime.strptime(date[:-3], '%Y-%m-%dT%H:%M:%S.%f')
-   # bounds = wrf.geo_bounds(wrfin=ncfile)
-   # # useful to setup the extent of the maps
-   # left   = bounds.bottom_left.lon
-   # right  = bounds.top_right.lon
-   # bottom = bounds.bottom_left.lat
-   # top    = bounds.top_right.lat
-
-   # if (not date == date0) or\
-   #    (not left < lon0 < right) or\
-   #    (not bottom < lat0 < top):
-   #    LG.critical('Error selecting wrfout file!!')
-   #    LG.debug(date,date0, date == date0)
-   #    LG.debug(type(date),type(date0))
-   #    LG.debug(left,lon0,right,left < lon0 < right)
-   #    LG.debug(bottom,lat0,top,bottom < lat0 < top)
-   #    # XXX raise OutsideDomainError
-   # else:
-   #    LG.debug('Correct wrfout')
    # Pressure___________________________________________________[hPa] (nz,ny,nx)
    pressure = getvar(ncfile, "pressure")
    # Vertical levels of the grid__________________________________[m] (nz,ny,nx)
@@ -438,6 +312,8 @@ def sounding(ncfile):
    # print('tc',tc.shape)
    # Temperature Dew Point_______________________________________[°C] (nz,ny,nx)
    td = getvar(ncfile, "td")
+   # Temperature Dew Point_______________________________________[°C] (nz,ny,nx)
+   td2m = getvar(ncfile, "td2")
    # print('td',td.shape)
    # Temperature 2m above ground________________________________[K-->°C] (ny,nx)
    t2m = getvar(ncfile, "T2")
@@ -445,8 +321,87 @@ def sounding(ncfile):
    # Wind_______________________________________________________[m/s] (nz,ny,nx)
    ua = getvar(ncfile, "ua")  # U wind component
    va = getvar(ncfile, "va")  # V wind component
-   return date,lats,lons,terrain,pressure,heights,tc,td,t2m,ua,va
+   return date,lats,lons,terrain,pressure,heights,tc,td,t2m,td2m,ua,va
 
+
+
+# def meteogram_hour(fname,lat,lon):
+#    ncfile = Dataset(fname)
+#    my_vars = ("P", "PSFC", "PB", "PH", "PHB","T", "QVAPOR", "HGT", "U", "V","W")
+#    my_cache = wrf.extract_vars(ncfile, wrf.ALL_TIMES, (my_vars))
+#    # Lats, Lons
+#    lats = getvar(ncfile, "lat",cache=my_cache)
+#    lons = getvar(ncfile, "lon",cache=my_cache)
+#    # Pressure___________________________________________________[hPa] (nz,ny,nx)
+#    pressure = getvar(ncfile, "pressure", cache=my_cache)
+#    # Perturbation pressure_______________________________________[Pa] (nz,ny,nx)
+#    p = getvar(ncfile, "P", cache=my_cache)
+#    # Base state pressure_________________________________________[Pa] (nz,ny,nx)
+#    pb = getvar(ncfile, "PB", cache=my_cache)
+#    # Water vapor mixing ratio______________________________________[] (nz,ny,nx)
+#    qvapor = getvar(ncfile, "QVAPOR", cache=my_cache)
+#    # Planetary Boundary Layer Height_________________________________[m] (ny,nx)
+#    # Atmospheric Boundary layer thickness above ground
+#    bldepth = getvar(ncfile, "PBLH", cache=my_cache)
+#    # Surface sensible heat flux in________________________________[W/m²] (ny,nx)
+#    hfx = getvar(ncfile, "HFX", cache=my_cache) 
+#    # Vertical levels of the grid__________________________________[m] (nz,ny,nx)
+#    heights = getvar(ncfile, "height", cache=my_cache) # = z
+#    # Topography of the terrain ______________________________________[m] (ny,nx)
+#    terrain = getvar(ncfile, "ter", cache=my_cache) # = HGT
+#    # Wind_______________________________________________________[m/s] (nz,ny,nx)
+#    ua = getvar(ncfile, "ua", cache=my_cache)  # U wind component
+#    va = getvar(ncfile, "va", cache=my_cache)  # V wind component
+#    wa = getvar(ncfile, "wa", cache=my_cache)  # W wind component
+#    # Temperature_________________________________________________[°C] (nz,ny,nx)
+#    tc = getvar(ncfile, "tc", cache=my_cache)
+#    # Temperature Dew Point_______________________________________[°C] (nz,ny,nx)
+#    td = getvar(ncfile, "td", cache=my_cache)
+#    # Thermal Updraft Velocity (W*)_________________________________[m/s] (ny,nx)
+#    wstar = ut.calc_wstar( hfx, bldepth )
+#    # Height of Critical Updraft Strength (hcrit)_____________________[m] (ny,nx)
+#    hcrit = ut.calc_hcrit( wstar, terrain, bldepth)
+#    # Height of SFC.LCL_______________________________________________[m] (ny,nx)
+#    # Cu Cloudbase ~I~where Cu Potential > 0~P~
+#    zsfclcl = ut.calc_sfclclheight( pressure, tc, td, heights, terrain, bldepth )
+#    # OvercastDevelopment Cloudbase__________________________________[m?] (ny,nx)
+#    pmb = 0.01*(p.values+pb.values) # press is vertical coordinate in mb
+#    zblcl = ut.calc_blclheight(qvapor,heights,terrain,bldepth,pmb,tc)
+#    # Mask zsfclcl, zblcl________________________________________________________
+#    ## Mask Cu Pot > 0
+#    zsfclcldif = bldepth + terrain - zsfclcl
+#    null = 0. * zsfclcl
+#    # cu_base_pote = np.where(zsfclcldif>0, zsfclcl, null)
+#    zsfclcl = np.where(zsfclcldif>0, zsfclcl, null)
+#    ## Mask Overcast dev Pot > 0
+#    zblcldif = bldepth + terrain - zblcl
+#    null = 0. * zblcl
+#    # over_base_pote = np.where(zblcldif>0, zblcl, null)
+#    zblcl = np.where(zblcldif>0, zblcl, null)
+#    # Clouds__________________________________________________________[%] (ny,nx)
+#    low_cloudfrac  = getvar(ncfile, "low_cloudfrac", cache=my_cache)
+#    mid_cloudfrac  = getvar(ncfile, "mid_cloudfrac", cache=my_cache)
+#    high_cloudfrac = getvar(ncfile, "high_cloudfrac", cache=my_cache)
+#    # Thermalling Height______________________________________________[m] (ny,nx)
+#    hglider = np.minimum(np.minimum(hcrit,zsfclcl), zblcl)
+#    ## Point #####################################################################
+#    i,j = wrf.ll_to_xy(ncfile, lat, lon)  # returns w-e, n-s
+#    pblh  = bldepth[j,i].values
+#    hs = np.reshape(heights[:,j,i].values, (-1,1))
+#    u  = np.reshape(ua[:,j,i].values, (-1,1))
+#    v  = np.reshape(va[:,j,i].values, (-1,1))
+#    hcrit = hcrit[j,i]
+#    wstar = wstar[j,i]
+#    zblcl = zblcl[j,i]
+#    zsfclcl = zsfclcl[j,i]
+#    low_cloudfrac = low_cloudfrac[j,i].values
+#    mid_cloudfrac = mid_cloudfrac[j,i].values
+#    high_cloudfrac = high_cloudfrac[j,i].values
+#    gnd = terrain[j,i].values
+#    lat = lats[j,i].values
+#    lon = lons[j,i].values
+#    return lat,lon, hs, u, v, pblh, hcrit, wstar,gnd, zsfclcl, zblcl,\
+#           low_cloudfrac,mid_cloudfrac,high_cloudfrac
 
 
 #def duplicate_first_row(M, value=None):

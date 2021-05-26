@@ -83,7 +83,7 @@ def save_figure(fig,fname,dpi=150, quality=90):
    plt.close('all')
 
 @log_help.timer(LG)
-def terrain_plot(reflat,reflon,left,right,bottom,top):
+def terrain(reflat,reflon,left,right,bottom,top):
    fig, ax, orto = setup_plot(reflat,reflon,left,right,bottom,top)
 ### RASTER ###################################################################
    files = os.popen('ls terrain_tif/geb*').read().strip().splitlines()

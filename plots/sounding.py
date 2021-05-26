@@ -60,7 +60,7 @@ def get_bottom_temp(ax,T,P):
 @log_help.timer(LG)
 @log_help.inout(LG)
 # def skewt_plot(p,tc,tdc,t0,date,u=None,v=None,fout='sounding.png',latlon='',title='',show=False):
-def skewt_plot(p,tc,tdc,t0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,Xcloud,Ycloud,cloud,lcl_p,lcl_t,parcel_prof,fout='sounding.png',latlon='',title='',rot=30,interpol=True,show=False):
+def skewt_plot(p,tc,tdc,t0,td0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,Xcloud,Ycloud,cloud,lcl_p,lcl_t,parcel_prof,fout='sounding.png',latlon='',title='',rot=30,interpol=True,show=False):
    """
    Layout             ________________________
                  Pmin|                 |C|Hod |<-- ax_hod
@@ -169,6 +169,7 @@ def skewt_plot(p,tc,tdc,t0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,Xcloud,Ycl
    ## T and Tdew vs pressure
    skew_bot.plot(p, tc,  'C3')
    skew_bot.plot(p, tdc, 'C0')
+   skew_bot.plot(p[0], td0, 'C0o')
    ## Windbarbs
    n = Ninterp//50
    inds, = np.where(p>Pmed)
@@ -181,7 +182,7 @@ def skewt_plot(p,tc,tdc,t0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,Xcloud,Ycl
    skew_bot.plot(cu_base_p, cu_base_t, 'C3o', zorder=100)
    skew_bot.plot(p[0], t0, 'ko', zorder=100)
    skew_bot.plot([p[0].magnitude,lcl_p.magnitude],
-                 [tdc[0].magnitude,lcl_t.magnitude],
+                 [td0.magnitude,lcl_t.magnitude],
                  color='C2',ls='--',lw=1, zorder=0)
    ## shade CAPE and CIN
    skew_bot.shade_cape(p, tc, parcel_prof)
@@ -238,7 +239,7 @@ def skewt_plot(p,tc,tdc,t0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,Xcloud,Ycl
    cont = 0
    while cont < 30 and not (difmin < .5 and difmax < .5):
       tmin = np.min([get_bottom_temp(skew_bot.ax,TDmed,Pmed),
-                     get_bottom_temp(skew_bot.ax,tdc[0],p[0])])
+                     get_bottom_temp(skew_bot.ax,td0,p[0])])
       tmax = np.max([get_bottom_temp(skew_bot.ax,Tmed,Pmed),
                      get_bottom_temp(skew_bot.ax,tc[0],p[0]),
                      get_bottom_temp(skew_bot.ax,t0,p[0])])
@@ -334,6 +335,9 @@ def skewt_plot(p,tc,tdc,t0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,Xcloud,Ycl
       sign = T0-TDmin.magnitude
       sign /= abs(sign)
       i+= 1
+   skew_top.shade_cape(p, tc, parcel_prof)
+   skew_top.shade_cin(p, tc, parcel_prof, tdc)
+   LG.info('plotted CAPE and CIN')
    skew_top.ax.xaxis.set_major_locator(MultipleLocator(5))
    skew_top.ax.set_xlabel('')
    LG.info('Top sounding rotation decided: {rotation}')
@@ -392,9 +396,9 @@ def skewt_plot(p,tc,tdc,t0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,Xcloud,Ycl
    ax_hod.text(  0, L-5,'N',   ha='center', va='top',    bbox=bbox_hod_cardinal)
    ax_hod.text(L-5,  0,'E',    ha='right',  va='center', bbox=bbox_hod_cardinal)
    ax_hod.text(-(L-5),0 ,'W',  ha='left',   va='center', bbox=bbox_hod_cardinal)
-   ax_hod.text(  0,-(L-5),'S', ha='center', va='center', bbox=bbox_hod_cardinal)
+   ax_hod.text(  0,-(L-5),'S', ha='center', va='bottom', bbox=bbox_hod_cardinal)
    h = Hodograph(ax_hod) #, component_range=L)
-   h.add_grid(increment=20)
+   h.add_grid(increment=20, lw=1, zorder=-1)
    # Plot a line colored by pressure (altitude)
    h.plot_colormapped(-u, -v, p, cmap=mcmaps.HEIGHTS)
    ax_hod.grid(False)

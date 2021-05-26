@@ -18,10 +18,8 @@ def recompile(f90):
    else: LG.debug('Already compiled')
 
 # Recompile DrJack's Fortran if necessary
-try: from . import drjack_num
-except:
-   recompile(f'drjack_num.f90')
-   from . import drjack_num
+recompile(f'drjack_num.f90')
+from . import drjack_num
 import wrf
 import plots
 # import sounding_plot as SP
@@ -30,6 +28,23 @@ import numpy as np
 
 from configparser import ConfigParser, ExtendedInterpolation
 from os.path import expanduser
+
+def get_domain(fname):
+   return fname.split('/')[-1].replace('wrfout_','').split('_')[0]
+
+def check_directory(path, stop=False):
+   if os.path.isdir(path):
+      LG.debug(f'{path} exists')
+   else:
+      if stop:
+         LG.critical(f'{path} does not exist')
+         exit()
+      else:
+         LG.warning(f'{path} does not exist')
+         com = f'mkdir -p {path}'
+         LG.debug(com)
+         os.system(com)
+         LG.info(f'created {path}')
 
 def get_outfolder(fname):
    """
@@ -73,7 +88,7 @@ def calc_hcrit( wstar, terrain, bldepth):
                               bldepth.transpose() )
    return hcrit.transpose()
 
-def calc_blclheight(qvapor,heights,terrain,bldepth,pmb,tc):
+def calc_blclheight(qvapor,heights,terrain,bldepth,pmb,tc,mask=True):
    qvapor = qvapor.transpose()
    heights = heights.transpose()
    terrain = terrain.transpose()
@@ -84,17 +99,27 @@ def calc_blclheight(qvapor,heights,terrain,bldepth,pmb,tc):
    # pmb=var = 0.01*(p.values+pb.values) # press is vertical coordinate in mb
    zblcl = drjack_num.calc_blclheight( pmb, tc, qvaporblavg, heights, terrain,
                                    bldepth )
+   # zblcl = zblcl.transpose()
+   if mask:
+      zblcldif = bldepth + terrain - zblcl
+      null = 0. * zblcl
+      zblcl = np.where(zblcldif>0, zblcl, null)
    return zblcl.transpose()
 
 
-def calc_sfclclheight( pressure, tc, td, heights, terrain, bldepth):
+def calc_sfclclheight( pressure, tc, td, heights, terrain, bldepth,mask=True):
    # Cu Cloudbase ~I~where Cu Potential > 0~P~
    zsfclcl = drjack_num.calc_sfclclheight( pressure.transpose(),
                                        tc.transpose(), td.transpose(),
                                        heights.transpose(),
                                        terrain.transpose(),
                                        bldepth.transpose() )
-   return zsfclcl.transpose()
+   zsfclcl = zsfclcl.transpose()
+   if mask:
+      zsfclcldif = bldepth + terrain - zsfclcl
+      null = 0. * zsfclcl
+      zsfclcl = np.where(zsfclcldif>0, zsfclcl, null)
+   return zsfclcl
 
 def calc_blavg(X, heights,terrain,bldepth):
    Xblavgwind = drjack_num.calc_blavg(X.transpose(), heights.transpose(),

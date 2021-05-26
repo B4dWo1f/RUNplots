@@ -16,7 +16,8 @@ do
       ls $file
       ls $file1
       time (python3 web_plots.py $file & python3 web_plots.py $file1)
-      # mv $file ${FOLDER}/processed/
+      mv $file ${FOLDER}/processed/
+      mv $file1 ${FOLDER}/processed/
    done
    echo "No more files"
    sleep 1.5m

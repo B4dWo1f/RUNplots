@@ -45,7 +45,7 @@ def get_sounding(date0, lat0, lon0, data_fol, OUT_fol,
    # print('File:',INfname)
    ncfile = Dataset(INfname)
 
-   date,lats,lons,terrain,pressure,heights,tc,td,t2m,ua,va = wrf_calcs.extract.sounding(ncfile)
+   date,lats,lons,terrain,pressure,heights,tc,td,t2m,td2m,ua,va = wrf_calcs.extract.sounding(ncfile)
 
    HH = date.strftime('%H%M')
    if fout == None:

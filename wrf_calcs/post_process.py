@@ -43,7 +43,7 @@ fmt = '%d/%m/%Y-%H:%M'
 
 @log_help.timer(LG)
 @log_help.inout(LG)
-def sounding(ncfile,lat,lon, pressure,tc,td,t2m,ua,va, terrain,lats,lons):
+def sounding(ncfile,lat,lon, pressure,tc,td,t2m,td2m,ua,va, terrain,lats,lons):
    """
    returns all the necessary properties for the provided coordinates (lat,lon)
    ncfile: ntcd4 Dataset from a wrfout file
@@ -69,6 +69,7 @@ def sounding(ncfile,lat,lon, pressure,tc,td,t2m,ua,va, terrain,lats,lons):
    tc = tc[:,j,i].metpy.quantify()
    tdc = td[:,j,i].metpy.quantify()
    t0 = t2m[j,i].metpy.quantify()
+   td0 = td2m[j,i].metpy.quantify()
    u = ua[:,j,i] # .metpy.quantify()
    v = va[:,j,i] # .metpy.quantify()
    u = extract.convert_units(u, 'km/hour').metpy.quantify()
@@ -79,13 +80,14 @@ def sounding(ncfile,lat,lon, pressure,tc,td,t2m,ua,va, terrain,lats,lons):
    tc = tc.metpy.unit_array
    tdc = tdc.metpy.unit_array
    t0 = t0.metpy.unit_array
+   td0 = td0.metpy.unit_array
    u = u.metpy.unit_array
    v = v.metpy.unit_array
    gnd = gnd.metpy.unit_array
    # LCL
-   lcl_p, lcl_t = mpcalc.lcl(p[0], t0, tdc[0])
+   lcl_p, lcl_t = mpcalc.lcl(p[0], t0, td0)
    # Parcel Profile
-   parcel_prof = mpcalc.parcel_profile(p, t0, tdc[0]) #.to('degC')
+   parcel_prof = mpcalc.parcel_profile(p, t0, td0) #.to('degC')
    ## Cumulus
    # base
    cu_base_p, cu_base_t = get_cloud_base(parcel_prof, p, tc, lcl_p, lcl_t)
@@ -103,7 +105,7 @@ def sounding(ncfile,lat,lon, pressure,tc,td,t2m,ua,va, terrain,lats,lons):
    cloud = np.vstack(mats).transpose()
    Xcloud = np.vstack([range(2*rep) for _ in range(cloud.shape[0])])
    Ycloud = np.vstack([ps for _ in range(2*rep)]).transpose()
-   return lat,lon,p,tc,tdc,t0,u,v,gnd,cu_base_p,cu_base_m,cu_base_t, Xcloud,Ycloud,cloud,lcl_p,lcl_t,parcel_prof
+   return lat,lon,p,tc,tdc,t0,td0,u,v,gnd,cu_base_p,cu_base_m,cu_base_t, Xcloud,Ycloud,cloud,lcl_p,lcl_t,parcel_prof
 
 
 
@@ -151,29 +153,33 @@ def vertical_profile(N):
    future modelling of the dependence of different kinds of clouds with
    the relative humidity at different levels
    """
-   x0 = np.logspace(np.log10(.3),np.log10(7),N)
-   t  = np.logspace(np.log10(.2),np.log10( 2),N)
+   x0 = np.logspace(np.log10(.2),np.log10(7),N)
+   t  = np.logspace(np.log10(.15),np.log10( 2),N)
    return x0, t
 
 @log_help.inout(LG)
-def get_cloud_extension(p,tc,td, cu_base,cu_top, threshold=.3, width=.2, N=500):
+def get_cloud_extension(p,tc,td, cu_base,cu_top, threshold=.3, width=.2, N=0):
    """
    Calculate the extension of the clouds. Two kinds.
-   - overcast: we'll consider clouds wherever tc-td < threshold (there's some
-               smoothing controlled by width to account for our uncertainty).
-               It returns two (N,) arrays with the pressures (altitudes) where
-               there is (or isn't) cloud
-   - cumulus: returns an array with shape p.shape with ones between cu_base and
-              cu_top and zeroes elsewhere.
-   returns 3 arrays with size (N,)
+     - overcast: we'll consider overcast clouds wherever tc-td < threshold
+                 (there's some smoothing controlled by width to account for our
+                 uncertainty).
+     - cumulus: we'll consider cumulus clouds between cu_base and cu_top
+   Returns 3 arrays with size (N,)
    ps: pressure levels for clouds
    overcast: proportional to non-convective cloud probability at every level
    cumulus: binary array with 1s where there are cumulus and 0s elsewhere
    """
    ## Clouds ############
-   ps = np.linspace(np.max(p),np.min(p),N)
-   tcs = interp1d(p,tc)(ps) * tc.units
-   tds = interp1d(p,td)(ps) * td.units
+   if N > 0:
+      ps = np.linspace(np.max(p),np.min(p),N)
+      tcs = interp1d(p,tc)(ps) * tc.units
+      tds = interp1d(p,td)(ps) * td.units
+   else:
+      N = len(p)
+      ps = p
+      tcs = tc
+      tds = td
    tdif = (tcs-tds).magnitude   # T-Td, proportional to Relative Humidity
    x0, t =  vertical_profile(N)
    overcast = ut.fermi(tdif, x0=x0,t=t)
@@ -182,6 +188,49 @@ def get_cloud_extension(p,tc,td, cu_base,cu_top, threshold=.3, width=.2, N=500):
    return ps, overcast, cumulus
 
 
+
+def spddir2uv(wspd,wdir):
+   """
+   Return U,V components from wind speed and direction
+   """
+   u = -wspd*np.sin(np.radians(wdir))
+   v = -wspd*np.cos(np.radians(wdir))
+   return u,v
+
+def drjacks_vars(u,v,w, hfx, pressure,heights, terrain, bldepth,tc, td,qvapor):
+   wblmaxmin = ut.calc_wblmaxmin(0, w, heights, terrain, bldepth)
+   wstar = ut.calc_wstar(hfx, bldepth)
+   hcrit = ut.calc_hcrit(wstar, terrain, bldepth)
+   zsfclcl = ut.calc_sfclclheight(pressure, tc, td, heights, terrain, bldepth)
+   zblcl = ut.calc_blclheight(qvapor,heights,terrain,bldepth,pressure,tc)
+   hglider = np.minimum(np.minimum(hcrit,zsfclcl), zblcl)
+   ublavgwind = ut.calc_blavg(u, heights, terrain, bldepth)
+   vblavgwind = ut.calc_blavg(v, heights, terrain, bldepth)
+   blwind = np.sqrt( np.square(ublavgwind) + np.square(ublavgwind) )
+   LG.debug(f'uBLavg: {ublavgwind.shape}')
+   LG.debug(f'vBLavg: {vblavgwind.shape}')
+   utop, vtop = ut.calc_bltopwind(u, v, heights, terrain, bldepth)
+   bltopwind = np.sqrt( np.square(utop) + np.square(vtop))
+   LG.debug(f'utop: {utop.shape}')
+   LG.debug(f'vtop: {vtop.shape}')
+   return wblmaxmin,wstar,hcrit,zsfclcl,zblcl,hglider,ublavgwind,vblavgwind,blwind,utop,vtop,bltopwind
+
+def wblmaxmin(heights,pblh,w):
+   """
+   python's implementation of DrJacks wblmaxmin calculation.
+   Returns the biggest value (positive or negative) of the W component within
+   the BL.
+   heights: (nz,ny,nx) matrix of model levels
+   pblh: (ny,nx) height of the BL
+   w: (nz,ny,nx) W component of the wind
+   """
+   dif = heights-pblh
+   # dif < 0 inside the BL
+   # dif > 0 outside the BL
+   M = np.where(dif<0.,self.w,0.)
+   wmax = np.max(M,axis=0)
+   wmin = np.min(M,axis=0)
+   return np.where(wmax>np.abs(wmin), wmax, wmin)
 
 
 
@@ -209,7 +258,8 @@ def scalar_props(fname,section):
    else: levels = []
    cmap = config[section]['cmap']
    units = config[section]['units']
-   return factor,vmin,vmax,delta,levels,cmap,units
+   title = config[section]['title']
+   return factor,vmin,vmax,delta,levels,cmap,units,title
 
 def get_domain(fname):
    return fname.split('/')[-1].replace('wrfout_','').split('_')[0]
