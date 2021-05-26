@@ -245,7 +245,7 @@ class CalcData(object):
             fig,ax,orto=geo.setup_plot(self.reflat,self.reflon,*self.borders)
             func(fig,ax,orto,*args)
             plots.geo.save_figure(fig,fname,dpi=self.dpi)
-            LG.info("plotted {fname.split('/')[-1]}")
+            LG.info(f"plotted {fname.split('/')[-1]}")
          else:
             LG.info(f"{fname.split('/')[-1]} already present")
    def plot_web(self,fname='plots.ini'):
@@ -275,7 +275,7 @@ class CalcData(object):
          factor,vmin,vmax,delta,levels,cmap,units,title = post.scalar_props('plots.ini', prop)
          title = f"{title} {(self.date+UTCshift).strftime('%d/%m/%Y-%H:%M')}"
          fig,ax,orto = plots.geo.setup_plot(self.reflat,self.reflon,
-                                            left,right,bottom,top)
+                                            *self.borders)
          C = plots.geo.scalar_plot(fig,ax,orto, self.lons,self.lats,
                                    wrf_properties[prop]*factor,
                             delta,vmin,vmax,cmap, levels=levels,
@@ -293,6 +293,21 @@ class CalcData(object):
                                     name=fname,units=units,
                                     fs=15,norm=None,extend='max')
             LG.info('plotted colorbar')
+      names = ['sfcwind','blwind','bltopwind']
+      winds = [[self.u10.values, self.v10.values],
+               [self.ublavgwind, self.vblavgwind],
+               [self.utop, self.vtop]]
+      for wind,name in zip(winds,names):
+         LG.debug(f'Plotting vector {name}')
+         fig,ax,orto = plots.geo.setup_plot(self.reflat,self.reflon,
+                                            *self.borders)
+         U = wind[0]
+         V = wind[1]
+         plots.geo.vector_plot(fig,ax,orto,self.lons.values,self.lats.values,U,V, dens=1.5,color=(0,0,0))
+         # fname = OUT_folder +'/'+ prefix + name + '_vec.png'
+         fname = f'{self.OUT_folder}/{HH}_{name}_vec.png'
+         plots.geo.save_figure(fig,fname,dpi=self.dpi)
+         LG.info(f'Plotted vector {name}')
 
 
 

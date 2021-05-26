@@ -1,6 +1,22 @@
 #!/bin/bash
 RUN_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
+# STDOUT to log
+LOG_FILE="${RUN_DIR}/process.log"
+echo > "${LOG_FILE}"
+# Close STDOUT file descriptor
+exec 1<&-
+# Open STDOUT as $LOG_FILE file for read and write.
+exec 1<>"${LOG_FILE}"
+
+# STDERR to err
+ERR_FILE="${RUN_DIR}/process.err"
+echo > "${ERR_FILE}"
+# Close STDERR FD
+exec 2<&-
+# Redirect STDERR to STDOUT
+exec 2<>"${ERR_FILE}"
+
 
 FOLDER=$1
 

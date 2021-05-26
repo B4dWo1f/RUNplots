@@ -1,6 +1,7 @@
 __pycache__
-*.f90
-*.log
-*.png
+**.f90
+**.log
+**.err
+**.png
 titles.txt
 STOP
