@@ -112,7 +112,7 @@ class CalcData(object):
       self.u,self.v,self.w, self.u10,self.v10,\
       self.wspd, self.wdir, self.wspd10, self.wdir10,\
       self.pressure, self.heights, self.terrain,\
-      self.bldepth, self.pblh, self.hfx, self.qcloud, self.qvapor,\
+      self.bldepth, self.hfx, self.qcloud, self.qvapor,\
       self.tc, self.td, self.tc2m, self.td2m, self.tsk,\
       self.CAPE, self.rain,\
       self.low_cloudfrac, self.mid_cloudfrac, self.high_cloudfrac,\

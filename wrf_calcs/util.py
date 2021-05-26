@@ -60,6 +60,15 @@ def get_outfolder(fname):
    return wrfout_folder, plots_folder
 
 
+def maskPot0(M, terrain,bldepth):
+   """
+   input: arrays
+   """
+   Mdif = terrain+bldepth - M
+   null = 0. * M
+   return np.where( Mdif>0, M, null )
+
+
 
 def calc_wblmaxmin(linfo, wa, heights, terrain, bldepth):
    """
@@ -88,7 +97,7 @@ def calc_hcrit( wstar, terrain, bldepth):
                               bldepth.transpose() )
    return hcrit.transpose()
 
-def calc_blclheight(qvapor,heights,terrain,bldepth,pmb,tc,mask=True):
+def calc_blclheight(qvapor,heights,terrain,bldepth,pmb,tc):
    qvapor = qvapor.transpose()
    heights = heights.transpose()
    terrain = terrain.transpose()
@@ -99,27 +108,17 @@ def calc_blclheight(qvapor,heights,terrain,bldepth,pmb,tc,mask=True):
    # pmb=var = 0.01*(p.values+pb.values) # press is vertical coordinate in mb
    zblcl = drjack_num.calc_blclheight( pmb, tc, qvaporblavg, heights, terrain,
                                    bldepth )
-   # zblcl = zblcl.transpose()
-   if mask:
-      zblcldif = bldepth + terrain - zblcl
-      null = 0. * zblcl
-      zblcl = np.where(zblcldif>0, zblcl, null)
    return zblcl.transpose()
 
 
-def calc_sfclclheight( pressure, tc, td, heights, terrain, bldepth,mask=True):
+def calc_sfclclheight( pressure, tc, td, heights, terrain, bldepth):
    # Cu Cloudbase ~I~where Cu Potential > 0~P~
    zsfclcl = drjack_num.calc_sfclclheight( pressure.transpose(),
                                        tc.transpose(), td.transpose(),
                                        heights.transpose(),
                                        terrain.transpose(),
                                        bldepth.transpose() )
-   zsfclcl = zsfclcl.transpose()
-   if mask:
-      zsfclcldif = bldepth + terrain - zsfclcl
-      null = 0. * zsfclcl
-      zsfclcl = np.where(zsfclcldif>0, zsfclcl, null)
-   return zsfclcl
+   return zsfclcl.transpose()
 
 def calc_blavg(X, heights,terrain,bldepth):
    Xblavgwind = drjack_num.calc_blavg(X.transpose(), heights.transpose(),

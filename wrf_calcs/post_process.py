@@ -204,6 +204,12 @@ def drjacks_vars(u,v,w, hfx, pressure,heights, terrain, bldepth,tc, td,qvapor):
    zsfclcl = ut.calc_sfclclheight(pressure, tc, td, heights, terrain, bldepth)
    zblcl = ut.calc_blclheight(qvapor,heights,terrain,bldepth,pressure,tc)
    hglider = np.minimum(np.minimum(hcrit,zsfclcl), zblcl)
+   hglider = np.maximum(hglider,terrain)
+
+   # Pot > 0
+   zsfclcl = ut.maskPot0(zsfclcl, terrain,bldepth)
+   zblcl = ut.maskPot0(zblcl, terrain,bldepth)
+
    ublavgwind = ut.calc_blavg(u, heights, terrain, bldepth)
    vblavgwind = ut.calc_blavg(v, heights, terrain, bldepth)
    blwind = np.sqrt( np.square(ublavgwind) + np.square(ublavgwind) )

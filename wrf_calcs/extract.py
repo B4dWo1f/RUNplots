@@ -229,8 +229,8 @@ def model_variables(ncfile,my_cache=None):
    # Atmospheric Boundary layer thickness above ground
    bldepth = getvar(ncfile, "PBLH", cache=my_cache)
    # Atmospheric Boundary layer thickness above sea level
-   pblh = terrain + bldepth
-   return lats,lons, bounds, terrain, heights, pressure,p,pb,slp,bldepth, pblh
+   # pblh = terrain + bldepth
+   return lats,lons, bounds, terrain, heights, pressure,p,pb,slp,bldepth #,pblh
 
 
 @log_help.timer(LG)
@@ -245,7 +245,7 @@ def all_properties(ncfile, my_cache=None):
 
    ### Read region data
    lats,lons, bounds, terrain, heights,\
-             pressure,p,pb,slp,bldepth,pblh = model_variables(ncfile, my_cache)
+             pressure,p,pb,slp,bldepth = model_variables(ncfile, my_cache)
 
    ## Temperature
    tc,td,t2m,td2m,tmn,tsk = temperatures(ncfile, my_cache)
@@ -269,7 +269,7 @@ def all_properties(ncfile, my_cache=None):
    LCL,_ = mpcalc.lcl(pressure[0,:,:], t2m, td2m)
    LCL = mpcalc.pressure_to_height_std(LCL) #np.array(lcl_p)*units.hPa)
    LCL = LCL.to('m')
-   LCL = maskPot0(LCL.magnitude, pblh) * LCL.units
+   LCL = ut.maskPot0(LCL.magnitude, terrain,bldepth) * LCL.units
    # CAPE_________________________________________________________[J/kg] (ny,nx)
    cape2d = getvar(ncfile, "cape_2d", cache=my_cache)
    MCAPE = cape2d[0,:,:]  # CAPE
@@ -277,16 +277,7 @@ def all_properties(ncfile, my_cache=None):
    LG.debug(f'CAPE: {MCAPE.shape}')
    LG.debug(f'CIN: {MCIN.shape}')
    LG.debug(f'LCL: {LCL.shape}')
-   return lats,lons,u,v,w,u10,v10,wspd,wdir,wspd10,wdir10,pressure,heights,terrain,bldepth,pblh,hfx,qcloud,qvapor,tc,td,t2m,td2m,tsk,MCAPE,rain,low_cloudfrac,mid_cloudfrac,high_cloudfrac,blcloudpct
-
-
-def maskPot0(M, pblh):
-   """
-   input: arrays
-   """
-   Mdif = pblh - M
-   null = 0. * M
-   return np.where( Mdif>0, M, null )
+   return lats,lons,u,v,w,u10,v10,wspd,wdir,wspd10,wdir10,pressure,heights,terrain,bldepth,hfx,qcloud,qvapor,tc,td,t2m,td2m,tsk,MCAPE,rain,low_cloudfrac,mid_cloudfrac,high_cloudfrac,blcloudpct
 
 
 def sounding(ncfile):
