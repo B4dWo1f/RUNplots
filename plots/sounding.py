@@ -115,6 +115,7 @@ def skewt_plot(p,tc,tdc,t0,td0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,Xcloud
    mpl.rcParams['mathtext.rm'] = 'serif'
    mpl.rcParams['figure.dpi'] = 150
    mpl.rcParams['axes.labelsize'] = 'large' # fontsize of the x any y labels
+   inter_axis_color = (.7,.7,.7)
 
    # Altitude breaking pressure
    Pmin = 150 * p.units   ############# upper limit
@@ -259,6 +260,7 @@ def skewt_plot(p,tc,tdc,t0,td0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,Xcloud
    ## Change the style of the gridlines
    skew_bot.ax.grid(True, which='major', axis='both',
             color='tan', linewidth=1.5, alpha=0.5)
+   skew_bot.ax.spines['top'].set_color('none')
    LG.info('Done main plot')
 
 ### Clouds
@@ -272,6 +274,7 @@ def skewt_plot(p,tc,tdc,t0,td0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,Xcloud
    plt.setp(ax_cloud_bot.get_yticklabels(), visible=False)
    ax_cloud_bot.set_ylabel('')
    ax_cloud_bot.grid(False)
+   ax_cloud_bot.spines['top'].set_color('none')
    LG.info('Done clouds bottom')
 
 ### Wind Plot
@@ -374,6 +377,7 @@ def skewt_plot(p,tc,tdc,t0,td0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,Xcloud
    skew_top.ax.grid(True, which='major', axis='both', color='tan',
                                          linewidth=1.5, alpha=0.5)
    plt.setp(skew_top.ax.get_xticklabels(), visible=False)
+   skew_top.ax.spines['bottom'].set_color(inter_axis_color)
 
 ### Clouds
    LG.info('Plotting clouds top')
@@ -383,6 +387,7 @@ def skewt_plot(p,tc,tdc,t0,td0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,Xcloud
    plt.setp(ax_cloud_top.get_yticklabels(), visible=False)
    ax_cloud_top.set_ylabel('')
    ax_cloud_top.grid(False)
+   ax_cloud_top.spines['bottom'].set_color(inter_axis_color)
    LG.info('Done clouds top')
 
 ### Wind Plot. Hodograph
