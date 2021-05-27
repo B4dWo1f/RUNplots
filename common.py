@@ -231,11 +231,11 @@ class CalcData(object):
       file_func = [(f'{self.OUT_folder}/rivers.png',geo.rivers_plot,[]),
                    (f'{self.OUT_folder}/ccaa.png', geo.ccaa_plot,[]),
                    (f'{self.OUT_folder}/cities.png', geo.csv_plot,
-                                                [f'{here}/cities.csv']),
+                                                [f'{here}/cities.csv','o']),
                    (f'{self.OUT_folder}/cities_names.png', geo.csv_names_plot,
                                                 [f'{here}/cities.csv']),
                    (f'{self.OUT_folder}/takeoffs.png', geo.csv_plot,
-                                              [f'{here}/takeoffs.csv']),
+                                              [f'{here}/takeoffs.csv','x']),
                    (f'{self.OUT_folder}/takeoffs_names.png',
                                               geo.csv_names_plot,
                                               [f'{here}/takeoffs.csv']) ]

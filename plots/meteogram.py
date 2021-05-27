@@ -10,12 +10,15 @@ LG = logging.getLogger(__name__)
 ## True unless RUN_BY_CRON is not defined
 is_cron = bool( os.getenv('RUN_BY_CRON') )
 import matplotlib as mpl
-if is_cron:
-   LG.info('Run from cron. Using Agg backend')
-   mpl.use('Agg')
+# if is_cron:
+#    LG.info('Run from cron. Using Agg backend')
+mpl.use('Agg')
+mpl.rcParams['font.family'] = 'serif'
+mpl.rcParams['font.size'] = 15.0
+mpl.rcParams['mathtext.rm'] = 'serif'
+mpl.rcParams['mathtext.fontset'] = 'cm'
 import matplotlib.pyplot as plt
-try: plt.style.use('mystyle')
-except: pass
+
 import numpy as np
 from matplotlib.patches import Rectangle
 from matplotlib.ticker import MultipleLocator,ScalarFormatter
