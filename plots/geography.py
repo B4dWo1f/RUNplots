@@ -10,9 +10,14 @@ LG = logging.getLogger(__name__)
 ## True unless RUN_BY_CRON is not defined
 is_cron = bool( os.getenv('RUN_BY_CRON') )
 import matplotlib as mpl
-if is_cron:
-   LG.info('Run from cron. Using Agg backend')
-   mpl.use('Agg')
+# if is_cron:
+#    LG.warning('Run from cron. Using Agg backend')
+mpl.use('Agg')
+mpl.rcParams['font.family'] = 'serif'
+mpl.rcParams['font.size'] = 15.0
+mpl.rcParams['mathtext.rm'] = 'serif'
+mpl.rcParams['mathtext.fontset'] = 'cm'
+
 import matplotlib.pyplot as plt
 import matplotlib.patheffects as PathEffects
 from matplotlib.colors import LightSource, BoundaryNorm

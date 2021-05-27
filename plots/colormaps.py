@@ -1,11 +1,13 @@
 #!/usr/bin/python3
 # -*- coding: UTF-8 -*-
 
-import os
-is_cron = bool( os.getenv('RUN_BY_CRON') )
-if is_cron:
-   import matplotlib as mpl
-   mpl.use('Agg')
+# import os
+# is_cron = bool( os.getenv('RUN_BY_CRON') )
+# if is_cron:
+#    import matplotlib as mpl
+#    mpl.use('Agg')
+import matplotlib as mpl
+mpl.use('Agg')
 
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap, ListedColormap

@@ -10,9 +10,13 @@ LG = logging.getLogger(__name__)
 ## True unless RUN_BY_CRON is not defined
 is_cron = bool( os.getenv('RUN_BY_CRON') )
 import matplotlib as mpl
-if is_cron:
-   LG.info('Run from cron. Using Agg backend')
-   mpl.use('Agg')
+# if is_cron:
+#    LG.critical('Run from cron. Using Agg backend')
+mpl.use('Agg')
+mpl.rcParams['font.family'] = 'serif'
+mpl.rcParams['font.size'] = 15.0
+mpl.rcParams['mathtext.rm'] = 'serif'
+mpl.rcParams['mathtext.fontset'] = 'cm'
 import matplotlib.pyplot as plt
 import matplotlib.patheffects as PathEffects
 from matplotlib.colors import LightSource, BoundaryNorm
@@ -294,6 +298,7 @@ def skewt_plot(p,tc,tdc,t0,td0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,Xcloud
    plt.setp(ax_wind_bot.get_yticklabels(), visible=False)
    ax_wind_bot.set_ylabel('')
    ax_wind_bot.grid(True, which='minor', axis='x',color=(.8,.8,.8))
+   ax_wind_bot.grid(True, which='minor', axis='x',color=(.5,.5,.5))
    LG.info('Done wind bottom')
 
 
