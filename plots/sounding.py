@@ -312,13 +312,13 @@ def skewt_plot(p,tc,tdc,t0,td0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,Xcloud
    # Automatic skew selection to visualize all the data
    LG.info('Plotting sounding top')
    isin = False  # Both Td and T are within the drawn limits
-   rot = 89
+   rot = 70
    sign = 1
    delta_rot = 1
    i = 0
    LG.info('Adjusting rotation for top sounding')
    LG.debug(f'Initial skewness: {rot}')
-   while not isin:
+   while not isin and i<30:
       try: skew_top.ax.remove()
       except UnboundLocalError: pass
       rotation = rot+sign*i*delta_rot
