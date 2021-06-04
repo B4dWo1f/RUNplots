@@ -10,14 +10,8 @@ LG = logging.getLogger(__name__)
 ## True unless RUN_BY_CRON is not defined
 is_cron = bool( os.getenv('RUN_BY_CRON') )
 import matplotlib as mpl
-# if is_cron:
-#    LG.info('Run from cron. Using Agg backend')
-mpl.use('Agg')
-mpl.rcParams['font.family'] = 'serif'
-mpl.rcParams['font.size'] = 15.0
-mpl.rcParams['mathtext.rm'] = 'serif'
-mpl.rcParams['mathtext.fontset'] = 'cm'
 import matplotlib.pyplot as plt
+plt.style.use(f'./meteogram.mplstyle')
 
 import numpy as np
 from matplotlib.patches import Rectangle
@@ -31,10 +25,18 @@ def meteogram(GND,hours,X,heights,BL,Hcrit,Zover,Zcu,S,U,V,PCT_low,PCT_mid,PCT_h
    X: X grid (vertical repetitions of hours)
    heights: Y grid
    """
+   print('*********')
+   print(heights.shape)
+   print(Zover)
+   print(Zcu)
+   print('*********')
+   exit()
    log = True
    ## Plot
-   gs_plots = plt.GridSpec(3, 1, height_ratios=[2,17,1],hspace=0.,top=0.95,right=0.95,bottom=0.05)
-   gs_cbar  = plt.GridSpec(3, 1, height_ratios=[2,17,1],hspace=0.5,top=0.95,right=0.95, bottom=0)
+   gs_plots = plt.GridSpec(3, 1, height_ratios=[2,17,1],hspace=0.,top=0.95,
+                                                        right=0.95,bottom=0.05)
+   gs_cbar  = plt.GridSpec(3, 1, height_ratios=[2,17,1],hspace=0.5,top=0.95,
+                                                        right=0.95, bottom=0)
    fig = plt.figure()
    # fig.subplots_adjust() #hspace=[0,0.2])
    ax =  fig.add_subplot(gs_plots[1,:])   # meteogram
@@ -88,13 +90,14 @@ def meteogram(GND,hours,X,heights,BL,Hcrit,Zover,Zcu,S,U,V,PCT_low,PCT_mid,PCT_h
    # ax.bar(hours,cu_top, bottom=Zcu, width=W+0.15, color=(.3,.3,.3), hatch='O', 
    #                                                       zorder=22, alpha=0.75)
    ## Plot Wind barbs
-   ax.barbs(X,heights,U,V,length=6,zorder=30)
+   bbox_barbs = dict(spacing=.2,emptybarb=.075, width=.1, height=.3)
+   ax.barbs(X,heights,U,V,length=5,sizes=bbox_barbs,zorder=30)
    ## Plot Terrain Ground
    terrain_color = (0.78235294, 0.37058824, 0.11568627)
    rect = Rectangle((0,0), 24, GND, facecolor=terrain_color, zorder=29)
    ax.add_patch(rect)
    ax.text(0, 0, f'GND: {GND:.0f}', va='bottom', zorder=100,
-                                       transform=ax.transAxes)
+                                       transform=ax.transAxes, fontsize=10)
 
    ## Title
    if len(title) > 0: ax0.set_title(title)
