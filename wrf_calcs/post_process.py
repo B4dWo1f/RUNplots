@@ -12,6 +12,7 @@ data used for the wrfout files
 import log_help
 import logging
 LG = logging.getLogger(__name__)
+LG.setLevel(logging.DEBUG)
 
 # # WRF and maps
 # from netCDF4 import Dataset
@@ -97,7 +98,6 @@ def meteogram(ncfile,lat,lon, pressure,height,tc,td,t2m,td2m,ua,va,wstar,hcrit,b
    return lat,lon,p,hs,tc,tdc,t0,td0,u,v,gnd,bldepth,wstar,hcrit
 
 @log_help.timer(LG)
-# @log_help.inout(LG)
 def sounding(ncfile,lat,lon, pressure,tc,td,t2m,td2m,ua,va, terrain,lats,lons):
    """
    returns all the necessary properties for the provided coordinates (lat,lon)
@@ -349,6 +349,7 @@ def wblmaxmin(heights,pblh,w):
 
 
 #XXX this should be in plots/utils.py
+@log_help.timer(LG)
 def scalar_props(fname,section):
    """
    Return the data for plotting property. Intended to read from plots.ini

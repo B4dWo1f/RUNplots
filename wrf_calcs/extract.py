@@ -75,8 +75,10 @@ def read_wrfout_info(fname):
    LG.info(f'Domain: {DOMAIN}')
  
    # Report here GFS batch and calculation time
-   gfs_batch = open(f'{wrfout_folder}/batch.txt','r').read().strip()
-   gfs_batch = dt.datetime.strptime(gfs_batch, fmt)
+   try:
+       gfs_batch = open(f'{wrfout_folder}/batch.txt','r').read().strip()
+       gfs_batch = dt.datetime.strptime(gfs_batch, fmt)
+   except FileNotFoundError: gfs_batch = '???' 
    LG.info(f'GFS batch: {gfs_batch}')
 
    # Get Creation date

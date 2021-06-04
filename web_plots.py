@@ -38,15 +38,15 @@ LG.info(f'Starting: {__file__}')
 
 
 
-P = common.get_config()
-output_folder = expanduser( P['system']['output_folder'] )
-plots_folder = expanduser( P['system']['plots_folder'] )
-data_folder = expanduser( P['system']['data_folder'] )
+output_folder,plots_folder,data_folder = common.get_folders()
+# output_folder = expanduser( P['system']['output_folder'] )
+# plots_folder = expanduser( P['system']['plots_folder'] )
+# data_folder = expanduser( P['system']['data_folder'] )
 ut.check_directory(output_folder,True)
 ut.check_directory(plots_folder,False)
 ut.check_directory(data_folder,False)
 
-zooms = common.get_zooms('zooms.ini')
+zooms = common.get_zooms('zooms.ini',domain=domain)
 
 # Read data
 A = common.CalcData(fname, plots_folder, data_folder)

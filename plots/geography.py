@@ -6,6 +6,7 @@ here = os.path.dirname(os.path.realpath(__file__))
 import log_help
 import logging
 LG = logging.getLogger(__name__)
+LG.setLevel(logging.DEBUG)
 
 ## True unless RUN_BY_CRON is not defined
 is_cron = bool( os.getenv('RUN_BY_CRON') )

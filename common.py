@@ -12,8 +12,9 @@ import numpy as np
 import wrf_calcs.extract as ex
 import wrf_calcs.post_process as post
 import wrf_calcs.util as ut
-import plots
+# import plots
 import plots.geography as geo
+import plots.sounding as Psound
 import datetime as dt
 fmt =  '%Y-%m-%d_%H:%M:%S'
 
@@ -144,6 +145,7 @@ class CalcData(object):
                                           prev=self.prevnc,\
                                           my_cache=self.cache)
       LG.info('All variables imported')
+   @log_help.timer(LG)
    def derived_quantities(self):
       """
       Variables not provided by WRF (nor WRF-python)
@@ -252,6 +254,7 @@ class CalcData(object):
                             self.bldepth, self.terrain,self.lats,self.lons)
       print('->',time()-start)
       return XXX
+   @log_help.timer(LG)
    def sounding(self, date0, lat0, lon0,place='',fout=None):
       """
       Plots sounding for date0 and coordinates (lat0,lon0)
@@ -311,10 +314,11 @@ class CalcData(object):
       LG.debug(f'Title: {title}')
 
       LG.info(f'Plotting')
-      plots.sounding.skewt_plot(p,tc,tdc,t0,td0,self.date,u,v,gnd,
+      Psound.skewt_plot(p,tc,tdc,t0,td0,self.date,u,v,gnd,
                                 cu_base_p,cu_base_m,cu_base_t,
                                 Xcloud,Ycloud,cloud,lcl_p,lcl_t,parcel_prof,
                                 fout=fout,latlon=latlon,title=title)
+
    @log_help.timer(LG)
    def get_meteogram_data(self):
       """
@@ -328,6 +332,7 @@ class CalcData(object):
       self.tc, self.td, self.tc2m, self.td2m,\
       self.ua, self.va, self.bldepth, self.wstar,\
       self.hcrit = ex.meteogram(self.ncfile,cache=self.cache)
+
    @log_help.timer(LG)
    def get_sounding_data(self):
       """
@@ -341,6 +346,8 @@ class CalcData(object):
       self.ua, self.va = ex.sounding(self.ncfile)
       if not (self.date == date):
          LG.critical('Error with the dates')
+
+   @log_help.timer(LG)
    def plot_background(self,force=False,zooms=[]):
       """
       plot background layers: terrain, admin boundaries, takeoffs,
@@ -396,7 +403,7 @@ class CalcData(object):
             LG.debug(f"plotting {fname.split('/')[-1]}")
             fig,ax,orto=geo.setup_plot(self.reflat,self.reflon,*self.borders)
             func(fig,ax,orto,*args)
-            plots.geo.save_figure(fig,fname,dpi=self.dpi)
+            geo.save_figure(fig,fname,dpi=self.dpi)
             for iz,zborder in enumerate(zooms):
                ax.set_extent(zborder, crs=orto)
                # fname = f'{self.OUT_folder}/terrain_z{iz}.png'
@@ -406,6 +413,7 @@ class CalcData(object):
                LG.info(f"plotted {fname.split('/')[-1]}")
          else:
             LG.info(f"{fname.split('/')[-1]} already present")
+   @log_help.timer(LG)
    def plot_web(self,fname='plots.ini',zooms=[]):
       """
       plot all the layers for the web
@@ -432,14 +440,14 @@ class CalcData(object):
          LG.info(prop)
          factor,vmin,vmax,delta,levels,cmap,units,title = post.scalar_props('plots.ini', prop)
          title = f"{title} {(self.date+UTCshift).strftime('%d/%m/%Y-%H:%M')}"
-         fig,ax,orto = plots.geo.setup_plot(self.reflat,self.reflon,
+         fig,ax,orto = geo.setup_plot(self.reflat,self.reflon,
                                             *self.borders)
-         C = plots.geo.scalar_plot(fig,ax,orto, self.lons,self.lats,
+         C = geo.scalar_plot(fig,ax,orto, self.lons,self.lats,
                                    wrf_properties[prop]*factor,
                             delta,vmin,vmax,cmap, levels=levels,
                             inset_label=date_label)
          fname = f'{self.OUT_folder}/{HH}_{prop}.png'
-         plots.geo.save_figure(fig,fname,dpi=self.dpi)
+         geo.save_figure(fig,fname,dpi=self.dpi)
          for iz,zborder in enumerate(zooms):
             ax.set_extent(zborder, crs=orto)
             geo.save_figure(fig,fname.replace('.png',f'_z{iz}.png'),dpi=self.dpi)
@@ -451,7 +459,7 @@ class CalcData(object):
             LG.info(f'{fname} already present')
          else:
             LG.debug('plotting colorbar')
-            plots.geo.plot_colorbar(cmap,delta,vmin,vmax, levels,
+            geo.plot_colorbar(cmap,delta,vmin,vmax, levels,
                                     name=fname,units=units,
                                     fs=15,norm=None,extend='max')
             LG.info('plotted colorbar')
@@ -462,27 +470,27 @@ class CalcData(object):
       for wind,name in zip(winds,names):
          ## Streamplot
          LG.debug(f'Plotting vector {name}')
-         fig,ax,orto = plots.geo.setup_plot(self.reflat,self.reflon,
+         fig,ax,orto = geo.setup_plot(self.reflat,self.reflon,
                                             *self.borders)
          U = wind[0]
          V = wind[1]
-         plots.geo.vector_plot(fig,ax,orto,self.lons.values,self.lats.values,U,V, dens=1.5,color=(0,0,0))
+         geo.vector_plot(fig,ax,orto,self.lons.values,self.lats.values,U,V, dens=1.5,color=(0,0,0))
          # fname = OUT_folder +'/'+ prefix + name + '_vec.png'
          fname = f'{self.OUT_folder}/{HH}_{name}_vec.png'
-         plots.geo.save_figure(fig,fname,dpi=self.dpi)
+         geo.save_figure(fig,fname,dpi=self.dpi)
          for iz,zborder in enumerate(zooms):
             ax.set_extent(zborder, crs=orto)
             geo.save_figure(fig,fname.replace('.png',f'_z{iz}.png'),dpi=self.dpi)
             LG.info(f'plotted zoom {iz}')
          LG.info(f'Plotted vector {name}')
          ## Barbs
-         fig,ax,orto = plots.geo.setup_plot(self.reflat,self.reflon,
+         fig,ax,orto = geo.setup_plot(self.reflat,self.reflon,
                                             *self.borders)
-         plots.geo.barbs_plot(fig,ax,orto,self.lons.values,self.lats.values,
-                              U,V,color='C3')
+         geo.barbs_plot(fig,ax,orto,self.lons.values,self.lats.values,
+                              U,V,color='k')
          # fname = OUT_folder +'/'+ prefix + name + '_vec.png'
          fname = f'{self.OUT_folder}/{HH}_{name}_barb.png'
-         plots.geo.save_figure(fig,fname,dpi=self.dpi)
+         geo.save_figure(fig,fname,dpi=self.dpi)
          for iz,zborder in enumerate(zooms):
             ax.set_extent(zborder, crs=orto)
             geo.save_figure(fig,fname.replace('.png',f'_z{iz}.png'),dpi=self.dpi)
@@ -514,15 +522,30 @@ def get_config(fname='plots.ini'):
          if k in ['factor','delta','vmin','vmax']: value[k] = float(v)
    return props
 
-def get_zooms(fname='zooms.ini'):
+def get_folders(fname='plots.ini'):
+   LG.info(f'Loading config file: {fname}')
+   # if not os.path.isfile(fname): return None
+   config = ConfigParser(inline_comment_prefixes='#')
+   config._interpolation = ExtendedInterpolation()
+   config.read(fname)
+   return config['system']['output_folder'],\
+          config['system']['plots_folder'],\
+          config['system']['data_folder']
+
+def get_zooms(fname='zooms.ini',domain=''):
    sects = get_config(fname)
    zooms = []
    for k,v in sects.items():
+      parent = v['parent']
       left   = float(v['left'])
       right  = float(v['right'])
       bottom = float(v['bottom'])
       top    = float(v['top'])
-      zooms.append( [left,right,bottom,top] )
+      if len(domain) > 0:
+         if parent == domain:
+            zooms.append( [left,right,bottom,top] )
+         else: pass
+      else: zooms.append( [left,right,bottom,top] )
    return zooms
 
 def date2file(date,domain,folder):
