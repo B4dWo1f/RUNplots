@@ -23,7 +23,6 @@ import wrf
 # from colormaps import WindSpeed, Convergencias, CAPE, Rain
 # from colormaps import greys, reds, greens, blues
 from . import util as ut
-from . import extract
 from metpy.units import units
 import metpy.calc as mpcalc
 # import plot_functions as PF   # My plotting functions
@@ -40,9 +39,65 @@ is_cron = bool( os.getenv('RUN_BY_CRON') )
 import datetime as dt
 fmt = '%d/%m/%Y-%H:%M'
 
+def get_thermals(hfx,bldepth,terrain):
+   wstar = ut.calc_wstar( hfx, bldepth )
+   hcrit = ut.calc_hcrit( wstar, terrain, bldepth)
+   return wstar,hcrit
 
 @log_help.timer(LG)
-@log_help.inout(LG)
+# @log_help.inout(LG)
+def meteogram(ncfile,lat,lon, pressure,height,tc,td,t2m,td2m,ua,va,wstar,hcrit,bldepth, terrain,lats,lons):
+   """
+   returns all the necessary properties for the provided coordinates (lat,lon)
+   as well as calculate derived properties
+   ncfile: ntcd4 Dataset from a wrfout file
+   lat,lon: spatial coordinates for the sounding
+   pressure: 3d model pressures
+   tc: Model temperature in celsius
+   tdc: Model dew temperature in celsius
+   t2m: Model temperature 2m above ground
+   ua: Model X wind (m/s)
+   va: Model Y wind (m/s)
+   terrain: model topography XXX obsolete
+   lats: model latitudes grid
+   lons: model longitudes grid
+   """
+   i,j = wrf.ll_to_xy(ncfile, lat, lon)  # returns w-e, n-s
+   LG.info(f'({lat},{lon}) corresponds to ({j.values},{i.values}) node')
+   # Get sounding data for specific location
+   # Make unit aware
+   lat = lats[j,i].values
+   lon = lons[j,i].values
+   LG.info(f'Closest point: ({lat},{lon})')
+   p = pressure[:,j,i].metpy.quantify()
+   hs = height[:,j,i].metpy.quantify()
+   tc = tc[:,j,i].metpy.quantify()
+   tdc = td[:,j,i].metpy.quantify()
+   t0 = t2m[j,i].metpy.quantify()
+   td0 = td2m[j,i].metpy.quantify()
+   u = ua[:,j,i] # .metpy.quantify()
+   v = va[:,j,i] # .metpy.quantify()
+   u = ut.convert_units(u, 'km/hour').metpy.quantify()
+   v = ut.convert_units(v, 'km/hour').metpy.quantify()
+   gnd = terrain[j,i]
+   bldepth = bldepth[j,i]
+   wstar = wstar[j,i]
+   hcrit = hcrit[j,i]
+   # Use metpy/pint quantity
+   p = p.metpy.unit_array
+   hs = hs.metpy.unit_array
+   tc = tc.metpy.unit_array
+   tdc = tdc.metpy.unit_array
+   t0 = t0.metpy.unit_array
+   td0 = td0.metpy.unit_array
+   u = u.metpy.unit_array
+   v = v.metpy.unit_array
+   gnd = gnd.metpy.unit_array
+   bldepth = bldepth.metpy.unit_array
+   return lat,lon,p,hs,tc,tdc,t0,td0,u,v,gnd,bldepth,wstar,hcrit
+
+@log_help.timer(LG)
+# @log_help.inout(LG)
 def sounding(ncfile,lat,lon, pressure,tc,td,t2m,td2m,ua,va, terrain,lats,lons):
    """
    returns all the necessary properties for the provided coordinates (lat,lon)
@@ -72,8 +127,8 @@ def sounding(ncfile,lat,lon, pressure,tc,td,t2m,td2m,ua,va, terrain,lats,lons):
    td0 = td2m[j,i].metpy.quantify()
    u = ua[:,j,i] # .metpy.quantify()
    v = va[:,j,i] # .metpy.quantify()
-   u = extract.convert_units(u, 'km/hour').metpy.quantify()
-   v = extract.convert_units(v, 'km/hour').metpy.quantify()
+   u = ut.convert_units(u, 'km/hour').metpy.quantify()
+   v = ut.convert_units(v, 'km/hour').metpy.quantify()
    gnd = terrain[j,i]
    # Use metpy/pint quantity
    p = p.metpy.unit_array
@@ -87,7 +142,9 @@ def sounding(ncfile,lat,lon, pressure,tc,td,t2m,td2m,ua,va, terrain,lats,lons):
    # LCL
    lcl_p, lcl_t = mpcalc.lcl(p[0], t0, td0)
    # Parcel Profile
-   parcel_prof = mpcalc.parcel_profile(p, t0, td0) #.to('degC')
+   parcel_prof = mpcalc.parcel_profile(p, t0, td0)
+   try: parcel_prof = parcel_prof.convert_units('degC')
+   except: parcel_prof = parcel_prof.to('degC')
    ## Cumulus
    # base
    cu_base_p, cu_base_t = get_cloud_base(parcel_prof, p, tc, lcl_p, lcl_t)
@@ -99,6 +156,7 @@ def sounding(ncfile,lat,lon, pressure,tc,td,t2m,td2m,ua,va, terrain,lats,lons):
    cu_top_m = cu_top_m.to('m')
    # Cumulus matrix
    ps, overcast, cumulus = get_cloud_extension(p,tc,tdc, cu_base_p,cu_top_p)
+   ### XXX This bit should be in plots
    rep = 3
    mats =  [overcast for _ in range(rep)]
    mats += [cumulus for _ in range(rep)]
@@ -109,19 +167,22 @@ def sounding(ncfile,lat,lon, pressure,tc,td,t2m,td2m,ua,va, terrain,lats,lons):
 
 
 
-@log_help.inout(LG)
-def find_cross(left,right,p,tc,Ninterp=500):
+# @log_help.inout(LG)
+@log_help.timer(LG)
+def find_cross(profile,tc,p,Ninterp=500):
    """
-   finds the lowest (highest p) crossing point between left and right curves
-   interp: interpolate the data for a more accurate crossing point
+   Inputs should be arrays WITHOUT UNITS
+   finds the lowest (highest p) crossing point between profile and tc curves
+   Ninterp: [int] Number of interpolation points for the arrays.
+            If Ninterp = 0 no interpolation is used
    """
    if Ninterp > 0:
       LG.debug('Interpolating with {Ninterp} points')
       ps = np.linspace(np.max(p),np.min(p),Ninterp)
-      left = interp1d(p,left)(ps) * left.units
-      right = interp1d(p,right)(ps) * right.units
+      profile = interp1d(p,profile)(ps) #* profile.units
+      tc = interp1d(p,tc)(ps) #* tc.units
       p = ps
-   aux = left-right
+   aux = profile-tc
    aux = (np.diff(aux/np.abs(aux)) != 0)*1   # manual implementation of sign
    ind, = np.where(aux==1)
    try: ind_cross = np.min(ind)
@@ -129,19 +190,21 @@ def find_cross(left,right,p,tc,Ninterp=500):
       LG.warning('Unable to find crossing point')
       ind_cross = 0
    p_base = p[ind_cross]
-   t_base = right[ind_cross]
+   t_base = tc[ind_cross]
    return p_base, t_base
 
 
-@log_help.inout(LG)
+# @log_help.inout(LG)
+@log_help.timer(LG)
 def get_cloud_base(parcel_profile,p,tc,lcl_p=None,lcl_t=None):
    """
    requires and keeps pint.units
    """
    LG.debug('Find cloud base')
    # Plot cloud base
-   p_base, t_base = find_cross(parcel_profile, tc, p, tc)
+   p_base, t_base = find_cross(parcel_profile, tc, p)
    if type(lcl_p) != type(None) and type(lcl_t) != type(None):
+      t_base = t_base * lcl_t.units
       LG.debug(f'LCL is provided, using min(lcl,cu_base)')
       p_base = np.max([lcl_p.magnitude, p_base.magnitude]) * lcl_p.units
       t_base = np.max([lcl_t.magnitude, t_base.magnitude]) * lcl_t.units
@@ -156,6 +219,51 @@ def vertical_profile(N):
    x0 = np.logspace(np.log10(.2),np.log10(7),N)
    t  = np.logspace(np.log10(.15),np.log10( 2),N)
    return x0, t
+
+# @log_help.inout(LG)
+@log_help.timer(LG)
+def get_cloud_extension1(p,tc,td, t0, td0, threshold=.3, width=.2, N=0):
+   """
+   Calculate the extension of the clouds. Two kinds.
+     - overcast: we'll consider overcast clouds wherever tc-td < threshold
+                 (there's some smoothing controlled by width to account for our
+                 uncertainty).
+     - cumulus: we'll consider cumulus clouds between cu_base and cu_top
+   Returns 3 arrays with size (N,)
+   ps: pressure levels for clouds
+   overcast: proportional to non-convective cloud probability at every level
+   cumulus: binary array with 1s where there are cumulus and 0s elsewhere
+   """
+   lcl_p, lcl_t = mpcalc.lcl(p[0], t0, td0)
+   parcel_prof = mpcalc.parcel_profile(p, t0, td0).metpy.quantify()
+   parcel_prof = ut.convert_units(parcel_prof, 'degC')
+   ## Cumulus
+   # base
+   cu_base_p, cu_base_t = get_cloud_base(parcel_prof, p, tc, lcl_p, lcl_t)
+   cu_base_m = mpcalc.pressure_to_height_std(cu_base_p)
+   # cu_base_m = cu_base_m.to('m')
+   # top
+   cu_top_p, cu_top_t = get_cloud_base(parcel_prof, p, tc)
+   cu_top_p = cu_top_p * cu_base_p.units
+   cu_top_t = cu_top_t * cu_base_t.units
+   cu_top_m = mpcalc.pressure_to_height_std(cu_top_p)
+   # cu_top_m = cu_top_m.to('m')
+   ## Clouds ############
+   if N > 0:
+      ps = np.linspace(np.max(p),np.min(p),N)
+      tcs = interp1d(p,tc)(ps) * tc.units
+      tds = interp1d(p,td)(ps) * td.units
+   else:
+      N = len(p)
+      ps = p
+      tcs = tc
+      tds = td
+   tdif = (tcs-tds).values   # T-Td, proportional to Relative Humidity
+   x0, t =  vertical_profile(N)
+   overcast = ut.fermi(tdif, x0=x0,t=t)
+   overcast = overcast/ut.fermi(0, x0=x0,t=t)
+   cumulus = np.where((cu_base_p>ps) & (ps>cu_top_p),1,0)
+   return ps, overcast, cumulus
 
 @log_help.inout(LG)
 def get_cloud_extension(p,tc,td, cu_base,cu_top, threshold=.3, width=.2, N=0):
@@ -240,6 +348,7 @@ def wblmaxmin(heights,pblh,w):
 
 
 
+#XXX this should be in plots/utils.py
 def scalar_props(fname,section):
    """
    Return the data for plotting property. Intended to read from plots.ini

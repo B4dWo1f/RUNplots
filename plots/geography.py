@@ -88,7 +88,7 @@ def save_figure(fig,fname,dpi=150, quality=90):
    plt.close('all')
 
 @log_help.timer(LG)
-def terrain(reflat,reflon,left,right,bottom,top):
+def terrain(reflat,reflon,left,right,bottom,top,ve=0.6):
    fig, ax, orto = setup_plot(reflat,reflon,left,right,bottom,top)
 ### RASTER ###################################################################
    files = os.popen('ls terrain_tif/geb*').read().strip().splitlines()
@@ -101,11 +101,12 @@ def terrain(reflat,reflon,left,right,bottom,top):
    mosaic, out_trans = merge(srcs, (left-D, bottom-D, right+D, top+D))
    terrain = mosaic[0,:,:]
    ls = LightSource(azdeg=315, altdeg=60)
-   ve = 0.7
    terrain = ls.hillshade(terrain, vert_exag=ve)
+   # from scipy.ndimage.filters import gaussian_filter
+   # ax.imshow(gaussian_filter(terrain,1),
    ax.imshow(terrain, extent=(left-D, right+D, bottom-D, top+D),
                       origin='upper', cmap='gray',
-                      aspect='equal', interpolation='lanczos',
+                      aspect='equal', interpolation='bicubic',
                       zorder=0, transform=orto)
    return fig,ax,orto
 
@@ -180,6 +181,7 @@ def csv_names_plot(fig,ax,orto, fname):
                               transform=orto,zorder=52)
       txt.set_path_effects([PathEffects.withStroke(linewidth=5,
                                                    foreground='w')])
+      txt.set_clip_on(True)
    return fig,ax,orto
 
 
@@ -220,10 +222,11 @@ def scalar_plot(fig,ax,orto, lons,lats,prop, delta,vmin,vmax,cmap,
        # LG.warning('NaN values found, unable to plot')
        C = None
    if len(inset_label) > 0:
-       ax.text(1,0., inset_label, va='bottom', ha='right', color='k',
-                     fontsize=12, bbox=dict(boxstyle="round",
-                                            ec=None, fc=(1., 1., 1., 0.9)),
-                     zorder=100, transform=ax.transAxes)
+      txt = ax.text(1,0, inset_label, va='bottom', ha='right', color='k',
+                    fontsize=12, bbox=dict(boxstyle="round",
+                                           ec=None, fc=(1,1,1,.9)),
+                    zorder=100, transform=ax.transAxes)
+      txt.set_clip_on(True)
    return C
 
 @log_help.timer(LG)
@@ -258,7 +261,7 @@ def barbs_plot(fig,ax,orto,lons,lats,U,V, n=1,color=(0,0,0,0.75)):
    n = 1
    f = 2
    ax.barbs(lons[::n,::n],lats[::n,::n], U[::n,::n],V[::n,::n],
-            color='C3', length=4, pivot='middle',
+            color=color, length=4, pivot='middle',
             sizes=dict(emptybarb=0.25/f, spacing=0.2/f, height=0.5/f),
             linewidth=0.75, transform=orto)
 

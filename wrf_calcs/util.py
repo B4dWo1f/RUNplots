@@ -33,15 +33,22 @@ def get_domain(fname):
    return fname.split('/')[-1].replace('wrfout_','').split('_')[0]
 
 def check_directory(path, stop=False):
+   """
+   check if folder path exists
+   stop: [bool] - True: stop if path doesn't exist
+                - False: create path and keep going
+   """
    if os.path.isdir(path):
       LG.debug(f'{path} exists')
    else:
       if stop:
-         LG.critical(f'{path} does not exist')
+         LG.critical(f'{path} does not exist. Stopping')
          exit()
       else:
          LG.warning(f'{path} does not exist')
+         LG.info(f'creating {path}')
          com = f'mkdir -p {path}'
+         LG.debug(com)
          LG.debug(com)
          os.system(com)
          LG.info(f'created {path}')
@@ -67,6 +74,19 @@ def maskPot0(M, terrain,bldepth):
    Mdif = terrain+bldepth - M
    null = 0. * M
    return np.where( Mdif>0, M, null )
+
+
+def convert_units(arr, new_unit):
+   """
+   Wrapper for metpy.convert_units while adding debug messages
+   """
+   try: old_unit = arr.units
+   except AttributeError: old_unit = arr.data.units
+   except: old_unit = ''
+   LG.debug(f"converting {old_unit} to {new_unit}")
+   arr = arr.metpy.convert_units(new_unit)
+   arr.attrs['units'] = new_unit
+   return arr
 
 
 
