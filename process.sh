@@ -31,7 +31,9 @@ do
       file1=`echo $file | sed 's/d01/d02/'`
       ls $file
       ls $file1
+      date
       time (python3 web_plots.py $file & python3 web_plots.py $file1)
+      date
       mv $file ${FOLDER}/processed/
       mv $file1 ${FOLDER}/processed/
    done
