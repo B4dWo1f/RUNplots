@@ -240,7 +240,7 @@ class CalcData(object):
          self.lats
          self.lons
       except AttributeError:
-         LG.warning('Sounding variables not available')
+         LG.warning('Meteogram variables not available')
          from time import time
          print('---')
          start = time()
@@ -290,7 +290,7 @@ class CalcData(object):
       u, v,\
       gnd,\
       cu_base_p, cu_base_m, cu_base_t,\
-      Xcloud,Ycloud,cloud,\
+      ps,overcast,cumulus,\
       lcl_p, lcl_t,\
       parcel_prof = post.sounding(self.ncfile, lat0, lon0,
                                                     self.pressure,
@@ -315,9 +315,9 @@ class CalcData(object):
 
       LG.info(f'Plotting')
       Psound.skewt_plot(p,tc,tdc,t0,td0,self.date,u,v,gnd,
-                                cu_base_p,cu_base_m,cu_base_t,
-                                Xcloud,Ycloud,cloud,lcl_p,lcl_t,parcel_prof,
-                                fout=fout,latlon=latlon,title=title)
+                             cu_base_p,cu_base_m,cu_base_t,
+                             ps,overcast,cumulus,lcl_p,lcl_t,parcel_prof,
+                             fout=fout,latlon=latlon,title=title)
 
    @log_help.timer(LG)
    def get_meteogram_data(self):
@@ -528,9 +528,9 @@ def get_folders(fname='plots.ini'):
    config = ConfigParser(inline_comment_prefixes='#')
    config._interpolation = ExtendedInterpolation()
    config.read(fname)
-   return config['system']['output_folder'],\
-          config['system']['plots_folder'],\
-          config['system']['data_folder']
+   return expanduser(config['system']['output_folder']),\
+          expanduser(config['system']['plots_folder']),\
+          expanduser(config['system']['data_folder'])
 
 def get_zooms(fname='zooms.ini',domain=''):
    sects = get_config(fname)

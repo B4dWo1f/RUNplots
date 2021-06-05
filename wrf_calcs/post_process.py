@@ -156,14 +156,7 @@ def sounding(ncfile,lat,lon, pressure,tc,td,t2m,td2m,ua,va, terrain,lats,lons):
    cu_top_m = cu_top_m.to('m')
    # Cumulus matrix
    ps, overcast, cumulus = get_cloud_extension(p,tc,tdc, cu_base_p,cu_top_p)
-   ### XXX This bit should be in plots
-   rep = 3
-   mats =  [overcast for _ in range(rep)]
-   mats += [cumulus for _ in range(rep)]
-   cloud = np.vstack(mats).transpose()
-   Xcloud = np.vstack([range(2*rep) for _ in range(cloud.shape[0])])
-   Ycloud = np.vstack([ps for _ in range(2*rep)]).transpose()
-   return lat,lon,p,tc,tdc,t0,td0,u,v,gnd,cu_base_p,cu_base_m,cu_base_t, Xcloud,Ycloud,cloud,lcl_p,lcl_t,parcel_prof
+   return lat,lon,p,tc,tdc,t0,td0,u,v,gnd,cu_base_p,cu_base_m,cu_base_t, ps,overcast,cumulus,lcl_p,lcl_t,parcel_prof
 
 
 
