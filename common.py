@@ -75,9 +75,11 @@ class CalcData(object):
       self.OUT_folder = '/'.join(path)
       ut.check_directory(self.OUT_folder)
       # Fix Data Folder
+      LG.debug(f'DATA: {DATA_folder}')
       path = [DATA_folder,self.domain,self.date.strftime('%Y/%m/%d')]
       self.DATA_folder = '/'.join(path)
       ut.check_directory(self.DATA_folder)
+      LG.info(f'DATA folder: {DATA_folder}')
       # Borders
       self.left   = self.bounds.bottom_left.lon
       self.right  = self.bounds.top_right.lon
@@ -165,8 +167,10 @@ class CalcData(object):
    @log_help.timer(LG)
    def save_props(self,folder=''):
       if len(folder) == 0: folder = self.DATA_folder
-      prefix = self.date.strftime('%Y/%m/%d/%H%M')
-      os.system(f"mkdir -p {folder}/{'/'.join(prefix.split('/')[:-1])}")
+      LG.info(f'Saving DATA in: {folder}')
+      prefix = self.date.strftime('%H%M')
+      # prefix = self.date.strftime('%Y/%m/%d/%H%M')
+      # os.system(f"mkdir -p {folder}/{'/'.join(prefix.split('/')[:-1])}")
       borders = {'reflat':float(self.reflat),
                  'reflon':float(self.reflon),
                  'bot_left':{'lat':float(self.bounds.bottom_left.lat),
