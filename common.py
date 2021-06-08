@@ -392,6 +392,7 @@ class CalcData(object):
       else:
          LG.info(f'{fname} already present')
       file_func = [(f'{self.OUT_folder}/rivers.png',geo.rivers_plot,[]),
+                   (f'{self.OUT_folder}/roads.png', geo.road_plot,[]),
                    (f'{self.OUT_folder}/ccaa.png', geo.ccaa_plot,[]),
                    (f'{self.OUT_folder}/cities.png', geo.csv_plot,
                                                 [f'{here}/cities.csv','o']),

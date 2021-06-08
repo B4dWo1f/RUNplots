@@ -165,6 +165,14 @@ def ccaa_plot(fig,ax,orto):
    return fig,ax,orto
 
 @log_help.timer(LG)
+def road_plot(fig,ax,orto):
+   roads = NaturalEarthFeature('cultural', 'roads',
+                                            '10m', facecolor='none')
+   ax.add_feature(roads, lw=2 ,edgecolor='w',zorder=51)
+   ax.add_feature(roads, lw=3 ,edgecolor='k',zorder=50)
+   return fig,ax,orto
+
+@log_help.timer(LG)
 def csv_plot(fig,ax,orto, fname,marker='x'):
    Yt,Xt = np.loadtxt(fname,usecols=(0,1),delimiter=',',unpack=True)
    names = np.loadtxt(fname,usecols=(2,),delimiter=',',dtype=str)
