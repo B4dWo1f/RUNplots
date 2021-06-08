@@ -381,8 +381,8 @@ class CalcData(object):
       if not os.path.isfile(fname) and not force:
          LG.debug('plotting meridians')
          fig,ax,orto = geo.setup_plot(self.reflat,self.reflon,*self.borders)
-         plots.geo.parallel_and_meridian(fig,ax,orto,*self.borders)
-         plots.geo.save_figure(fig,fname,dpi=self.dpi)
+         geo.parallel_and_meridian(fig,ax,orto,*self.borders)
+         geo.save_figure(fig,fname,dpi=self.dpi)
          for iz,zborder in enumerate(zooms):
             ax.set_extent(zborder, crs=orto)
             fname = f'{self.OUT_folder}/meridian_z{iz}.png'
@@ -429,7 +429,7 @@ class CalcData(object):
             'bltopwind':self.bltopwind, 'hglider':self.hglider,
             'wstar':self.wstar, 'zsfclcl':self.zsfclcl, 'zblcl':self.zblcl,
             'cape':self.CAPE, 'wblmaxmin':self.wblmaxmin,
-            'bldepth':self.bldepth,  #'bsratio':bsratio,
+            'bldepth':self.bldepth+self.terrain,  #'bsratio':bsratio,
             'rain':self.rain, 'blcloudpct':self.blcloudpct, 'tdif':self.tdif,
             'lowfrac':self.low_cloudfrac, 'midfrac':self.mid_cloudfrac,
             'highfrac':self.high_cloudfrac}

@@ -198,7 +198,7 @@ def model_variables(ncfile,my_cache=None):
    p: [hPa] (nz,ny,nx) perturbation pressure  of each node of the model
    pb: [hPa] (nz,ny,nx) base state pressure
    slp: [hPa] (ny,nx) sea level pressure
-   bldepth: [m] (ny,nx) height of the BL
+   bldepth: [m] (ny,nx) height of the BL   XXX check if above ground level?
    """
    LG.info('Reading WRF data')
    # The domain is a rectangular (regular) grid in Lambert projection

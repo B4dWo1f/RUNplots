@@ -84,12 +84,13 @@ def setup_plot(ref_lat,ref_lon,left,right,bottom,top,transparent=True):
    return fig,ax,orto
 
 def save_figure(fig,fname,dpi=150, quality=90):
+   LG.info(f'Saving: {fname}')
    fig.savefig(fname, transparent=True, bbox_inches='tight', pad_inches=0,
                       dpi=dpi, quality=quality)
    plt.close('all')
 
 @log_help.timer(LG)
-def terrain(reflat,reflon,left,right,bottom,top,ve=0.6):
+def terrain(reflat,reflon,left,right,bottom,top,ve=0.3):
    fig, ax, orto = setup_plot(reflat,reflon,left,right,bottom,top)
 ### RASTER ###################################################################
    files = os.popen('ls terrain_tif/geb*').read().strip().splitlines()
@@ -101,7 +102,7 @@ def terrain(reflat,reflon,left,right,bottom,top,ve=0.6):
    D = 2
    mosaic, out_trans = merge(srcs, (left-D, bottom-D, right+D, top+D))
    terrain = mosaic[0,:,:]
-   ls = LightSource(azdeg=315, altdeg=60)
+   ls = LightSource(azdeg=315, altdeg=65)
    terrain = ls.hillshade(terrain, vert_exag=ve)
    # from scipy.ndimage.filters import gaussian_filter
    # ax.imshow(gaussian_filter(terrain,1),
