@@ -337,7 +337,7 @@ def meteogram(ncfile, cache=None):
    hcrit:
    """
    date,lats,lons,terrain,pressure,heights,\
-                                         tc,td,t2m,td2m,ua,va = sounding(ncfile)
+                            tc,td,t2m,td2m,ua,va = sounding(ncfile, cache=cache)
    bldepth = getvar(ncfile, "PBLH", cache=cache)
    hfx = getvar(ncfile, "HFX", cache=cache) 
    wstar = ut.calc_wstar( hfx, bldepth )
