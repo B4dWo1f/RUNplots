@@ -35,6 +35,7 @@ import rasterio
 from rasterio.merge import merge
 import cartopy.crs as ccrs
 from cartopy.feature import NaturalEarthFeature
+import cartopy.feature as cfeature
 
 # Sounding
 from metpy.plots import SkewT, Hodograph
@@ -135,14 +136,10 @@ def rivers_plot(fig,ax,orto):
    rivers = NaturalEarthFeature('physical', 'rivers_europe',
                                 '10m', facecolor='none')
    ax.add_feature(rivers, lw=2 ,edgecolor='C0',zorder=50)
-   lakes = NaturalEarthFeature('physical', 'lakes', '10m') 
-   ax.add_feature(lakes, lw=2 ,edgecolor='C0',zorder=50)
-   lakes = NaturalEarthFeature('physical', 'lakes_historic', '10m')
-   ax.add_feature(lakes, lw=2 ,edgecolor='C0',zorder=50)
-   lakes = NaturalEarthFeature('physical', 'lakes_pluvial', '10m')
-   ax.add_feature(lakes, lw=2 ,edgecolor='C0',zorder=50)
-   lakes = NaturalEarthFeature('physical', 'lakes_europe', '10m')
-   ax.add_feature(lakes, lw=2 ,edgecolor='C0',zorder=50)
+   for field in ['lakes','lakes_historic','lakes_pluvial','lakes_europe']:
+       water = NaturalEarthFeature('physical', field, '10m')
+       ax.add_feature(water, lw=2 ,edgecolor='C0',
+                      facecolor=cfeature.COLORS['water'],zorder=50)
    return fig,ax,orto
 
 @log_help.timer(LG)
