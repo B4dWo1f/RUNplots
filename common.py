@@ -419,6 +419,7 @@ class CalcData(object):
                LG.info(f"plotted {fname.split('/')[-1]}")
          else:
             LG.info(f"{fname.split('/')[-1]} already present")
+
    @log_help.timer(LG)
    def plot_web(self,fname='plots.ini',zooms=[]):
       """

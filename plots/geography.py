@@ -28,6 +28,7 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from . import colormaps as mcmaps
 from scipy.interpolate import interp1d
+from matplotlib.patches import Circle
 
 # Map
 import numpy as np
@@ -313,8 +314,20 @@ def plot_colorbar(cmap,delta=4,vmin=0,vmax=60,levels=None,name='cbar',
 
 def manga(fig,ax,orto):
    f_manga = f'{here}/task.gps'
+   ang = np.arctan(1/6371)
+   ang = 1/111
    try:
       y,x,Rm = np.loadtxt(f_manga,usecols=(0,1,2),delimiter=',',unpack=True)
+      cont = 0
+      for ix,iy,r in zip(x,y,Rm):
+         if cont == 0: color = 'C1'
+         elif cont == len(y)-2: color = 'C3'
+         elif cont == len(y)-1: color = 'C0'
+         else: color = 'C2'
+         ax.add_patch(Circle(xy=[ix,iy], radius=(r/1000)*ang,
+                             color=color, alpha=0.3, transform=orto, zorder=30))
+         cont += 1
+
       # spacing of arrows
       scale = 2
       aspace = .18 # good value for scale of 1
@@ -356,9 +369,9 @@ def manga(fig,ax,orto):
           # scaling factors were chosen by experimenting a bit
           ax.arrow(X,Y,
                      np.sin(theta)*aspace/10,np.cos(theta)*aspace/10,
-                     head_width=aspace/8, color='r', transform=orto)
+                     head_width=aspace/3, color='C3', transform=orto)
       # ax.plot(x,y)
-      ax.plot(x,y, 'r-', lw=4, transform=orto) #c='C4',s=50,zorder=20)
+      ax.plot(x,y, 'C3-', lw=2, transform=orto) #c='C4',s=50,zorder=20)
    except: pass
 
 
