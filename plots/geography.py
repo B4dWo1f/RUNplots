@@ -311,6 +311,59 @@ def plot_colorbar(cmap,delta=4,vmin=0,vmax=60,levels=None,name='cbar',
    plt.close('all')  #XXX are you sure???
 
 
+def manga(fig,ax,orto):
+   f_manga = f'{here}/task.gps'
+   try:
+      y,x,Rm = np.loadtxt(f_manga,usecols=(0,1,2),delimiter=',',unpack=True)
+      # spacing of arrows
+      scale = 2
+      aspace = .18 # good value for scale of 1
+      aspace *= scale
+
+      # r is the distance spanned between pairs of points
+      r = [0]
+      for i in range(1,len(x)):
+          dx = x[i]-x[i-1]
+          dy = y[i]-y[i-1]
+          r.append(np.sqrt(dx*dx+dy*dy))
+      r = np.array(r)
+
+      # rtot is a cumulative sum of r, it's used to save time
+      rtot = []
+      for i in range(len(r)):
+          rtot.append(r[0:i].sum())
+      rtot.append(r.sum())
+
+      arrowData = [] # will hold tuples of x,y,theta for each arrow
+      arrowPos = 0   # current point on walk along data
+      rcount = 1
+      while arrowPos < r.sum():
+          x1,x2 = x[rcount-1],x[rcount]
+          y1,y2 = y[rcount-1],y[rcount]
+          da = arrowPos-rtot[rcount]
+          theta = np.arctan2((x2-x1),(y2-y1))
+          X = np.sin(theta)*da+x1
+          Y = np.cos(theta)*da+y1
+          arrowData.append((X,Y,theta))
+          arrowPos+=aspace
+          while arrowPos > rtot[rcount+1]:
+              rcount+=1
+              if arrowPos > rtot[-1]: break
+
+      # could be done in above block if you want
+      for X,Y,theta in arrowData:
+          # use aspace as a guide for size and length of things
+          # scaling factors were chosen by experimenting a bit
+          ax.arrow(X,Y,
+                     np.sin(theta)*aspace/10,np.cos(theta)*aspace/10,
+                     head_width=aspace/8, color='r', transform=orto)
+      # ax.plot(x,y)
+      ax.plot(x,y, 'r-', lw=4, transform=orto) #c='C4',s=50,zorder=20)
+   except: pass
+
+
+
+
 # Sounding
 ## Dark Theme ##################################################################
 # #  COLOR = 'black'
