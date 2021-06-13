@@ -312,8 +312,7 @@ def plot_colorbar(cmap,delta=4,vmin=0,vmax=60,levels=None,name='cbar',
    plt.close('all')  #XXX are you sure???
 
 
-def manga(fig,ax,orto):
-   f_manga = f'{here}/task.gps'
+def manga(fig,ax,orto,f_manga=f'{here}/task.gps'):
    ang = np.arctan(1/6371)
    ang = 1/111
    try:

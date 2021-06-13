@@ -147,6 +147,7 @@ class CalcData(object):
                                           prev=self.prevnc,\
                                           my_cache=self.cache)
       LG.info('All variables imported')
+
    @log_help.timer(LG)
    def derived_quantities(self):
       """
@@ -391,10 +392,11 @@ class CalcData(object):
          LG.info('plotted meridians')
       else:
          LG.info(f'{fname} already present')
-      file_func = [(f'{self.OUT_folder}/task.png',geo.manga,[]),
-                   (f'{self.OUT_folder}/rivers.png',geo.rivers_plot,[]),
+      file_func = [(f'{self.OUT_folder}/rivers.png',geo.rivers_plot,[]),
                    (f'{self.OUT_folder}/roads.png', geo.road_plot,[]),
                    (f'{self.OUT_folder}/ccaa.png', geo.ccaa_plot,[]),
+                   (f'{self.OUT_folder}/task.png',geo.manga,
+                                                  [f'{here}/task.gps']),
                    (f'{self.OUT_folder}/cities.png', geo.csv_plot,
                                                 [f'{here}/cities.csv','o']),
                    (f'{self.OUT_folder}/cities_names.png', geo.csv_names_plot,
