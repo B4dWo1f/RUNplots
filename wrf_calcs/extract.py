@@ -118,11 +118,13 @@ def clouds_rain(ncfile,prev=None,my_cache=None):
    # Rain___________________________________________________________[mm] (ny,nx)
    rainc  = getvar(ncfile, "RAINC", cache=my_cache)
    rainnc = getvar(ncfile, "RAINNC", cache=my_cache)
-   rain = rainc + rainnc
+   rainsh = getvar(ncfile, "RAINSH", cache=my_cache)
+   rain = rainc + rainnc + rainsh
    if prev != None:
       rainc0  = getvar(prev, "RAINC", cache=my_cache)
       rainnc0 = getvar(prev, "RAINNC", cache=my_cache)
-      rain0 = rainc0 + rainnc0
+      rainsh0 = getvar(prev, "RAINSH", cache=my_cache)
+      rain0 = rainc0 + rainnc0 + rainsh0
       rain -= rain0    # should be positive definite
       LG.info('Rain mm in 1 hour')
    else: LG.warning('Rain is cumulative')
