@@ -6,3 +6,4 @@ __pycache__
 titles.txt
 STOP
 plots.ini
+**.out
