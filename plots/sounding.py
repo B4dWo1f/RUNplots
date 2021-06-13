@@ -6,6 +6,7 @@ here = os.path.dirname(os.path.realpath(__file__))
 import log_help
 import logging
 LG = logging.getLogger(__name__)
+LG.setLevel(logging.DEBUG)
 
 ## True unless RUN_BY_CRON is not defined
 is_cron = bool( os.getenv('RUN_BY_CRON') )
@@ -63,8 +64,7 @@ def get_bottom_temp(ax,T,P):
 
 @log_help.timer(LG)
 @log_help.inout(LG)
-# def skewt_plot(p,tc,tdc,t0,date,u=None,v=None,fout='sounding.png',latlon='',title='',show=False):
-def skewt_plot(p,tc,tdc,t0,td0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,Xcloud,Ycloud,cloud,lcl_p,lcl_t,parcel_prof,fout='sounding.png',latlon='',title='',rot=30,interpol=True,show=False):
+def skewt_plot(p,tc,tdc,t0,td0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,ps0,overcast,cumulus,lcl_p,lcl_t,parcel_prof,fout='sounding.png',latlon='',title='',rot=30,interpol=True,show=False):
    """
    Layout             ________________________
                  Pmin|                 |C|Hod |<-- ax_hod
@@ -145,12 +145,16 @@ def skewt_plot(p,tc,tdc,t0,td0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,Xcloud
    fparcel = interp1d(p,parcel_prof)
    fu = interp1d(p,u)
    fv = interp1d(p,v)
+   fovercast = interp1d(ps0, overcast)
+   fcumulus  = interp1d(ps0, cumulus)
    p = ps
    tc = ftc(ps) * tc.units
    tdc = ftdc(ps) * tdc.units
    parcel_prof = fparcel(ps) * parcel_prof.units
    u = fu(ps) * u.units
    v = fv(ps) * v.units
+   overcast = fovercast(ps)
+   cumulus = fcumulus(ps)
    n_med = np.argmin(np.abs(p-500*p.units))
    #############
 
@@ -268,6 +272,14 @@ def skewt_plot(p,tc,tdc,t0,td0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,Xcloud
    LG.info('Done main plot')
 
 ### Clouds
+   # Generate clouds image from ps, overcast and cumulus
+   rep = 6
+   mats =  [overcast for _ in range(rep)]
+   mats += [cumulus for _ in range(rep)]
+   cloud = np.vstack(mats).transpose()
+   Xcloud = np.vstack([range(2*rep) for _ in range(cloud.shape[0])])
+   Ycloud = np.vstack([ps for _ in range(2*rep)]).transpose()
+   # Plot clouds image
    LG.info('Plotting clouds bottom')
    ax_cloud_bot = plt.subplot(gs[1,1], sharey=skew_bot.ax, zorder=-1)
    ax_cloud_bot.contourf(Xcloud, Ycloud, cloud, cmap='Greys',vmin=0,vmax=1)
@@ -312,13 +324,13 @@ def skewt_plot(p,tc,tdc,t0,td0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,Xcloud
    # Automatic skew selection to visualize all the data
    LG.info('Plotting sounding top')
    isin = False  # Both Td and T are within the drawn limits
-   rot = 70
+   rot = 75
    sign = 1
    delta_rot = 1
    i = 0
    LG.info('Adjusting rotation for top sounding')
    LG.debug(f'Initial skewness: {rot}')
-   while not isin and i<30:
+   while not isin and i<20:
       try: skew_top.ax.remove()
       except UnboundLocalError: pass
       rotation = rot+sign*i*delta_rot

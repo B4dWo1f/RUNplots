@@ -7,6 +7,10 @@ import log_help
 import logging
 LG = logging.getLogger(__name__)
 
+from os.path import expanduser
+import wrf_calcs.util as ut
+import wrf_calcs.post_process as post
+
 # import wrf
 import numpy as np
 import datetime as dt
@@ -129,6 +133,7 @@ def duplicate_first_row(M, value=None):
    if value != None: first_row = first_row*0+value
    return np.vstack([M,first_row])
 
+import common
 
 def get_meteogram(date0, lat0,lon0, data_fol, OUT_fol,place='', dom='d02',
                                                                 fout=None):
@@ -143,6 +148,33 @@ def get_meteogram(date0, lat0,lon0, data_fol, OUT_fol,place='', dom='d02',
    if not all([os.path.isfile(x) for x in files]):
       LG.critical('Missing files!!!')
       exit()
+
+   from time import time
+   # lat,lon,p,tc,tdc,t0,td0, u,v,gnd,wstar,hcrit = A.get_meteogram(date0, lat0, lon0,fout=fout)  #XXX missing place
+   heights, windU, windV, BL, Hcrit, Wstar,Zcu,Zover = [],[],[],[],[],[],[],[]
+   for fname in files:
+      start = time()
+      A = common.CalcData(fname, OUT_folder,read_all=False)
+      print('class',time()-start)
+      lat,lon,p,hs,tc,tdc,t0,td0, u,v,gnd,bldepth,wstar,hcrit = A.get_meteogram(date0, lat0, lon0,fout=fout)  #XXX missing place
+      print('get_meteogram',time()-start)
+      exit()
+      _, overcast, cumulus = post.get_cloud_extension1(p,tc,tdc, t0, td0)
+      print('cloud',time()-start)
+      heights.append(hs)
+      windU.append(u)
+      windV.append(v)
+      BL.append(bldepth)
+      Hcrit.append(hcrit)
+      Wstar.append(wstar)
+      Zover.append(overcast)
+      Zcu.append(cumulus)
+      print('list',time()-start)
+      print(time()-start)
+      exit()
+
+   exit()
+
    heights, windU,windV, BL,Hcrit,Wstar,Zcu,Zover = [],[],[],[],[],[],[],[]
    PCT_low,PCT_mid,PCT_high = [],[],[]
    for fname in files:
@@ -189,7 +221,6 @@ def get_meteogram(date0, lat0,lon0, data_fol, OUT_fol,place='', dom='d02',
    #########################
    title = f'{lat:.3f},{lon:.3f}  -  {date0.date()}'
    plots.meteogram.meteogram(GND,hours,X,heights,BL,Hcrit,Zover,Zcu,S,U,V,PCT_low,PCT_mid,PCT_high,title=title,fout=fout)
-
    return fout
 
 
@@ -217,6 +248,13 @@ if __name__ == '__main__':
    lat,lon = 41.172417,-3.617646 # somo
    data_folder = '../../Documents/storage/WRFOUT/Spain6_1'
    OUT_folder = '../../Documents/storage/PLOTS/Spain6_1'
+
+   P = common.get_config()
+   data_folder = expanduser( P['system']['output_folder'] )
+   OUT_folder = expanduser( P['system']['plots_folder'] )
+   ut.check_directory(data_folder,True)
+   ut.check_directory(OUT_folder,False)
+
    place = ''
    fout = 'meteogram.png'
    dom = 'd02'

@@ -6,6 +6,7 @@ here = os.path.dirname(os.path.realpath(__file__))
 import log_help
 import logging
 LG = logging.getLogger(__name__)
+LG.setLevel(logging.DEBUG)
 
 ## True unless RUN_BY_CRON is not defined
 is_cron = bool( os.getenv('RUN_BY_CRON') )
@@ -27,6 +28,7 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from . import colormaps as mcmaps
 from scipy.interpolate import interp1d
+from matplotlib.patches import Circle
 
 # Map
 import numpy as np
@@ -34,6 +36,7 @@ import rasterio
 from rasterio.merge import merge
 import cartopy.crs as ccrs
 from cartopy.feature import NaturalEarthFeature
+import cartopy.feature as cfeature
 
 # Sounding
 from metpy.plots import SkewT, Hodograph
@@ -83,12 +86,13 @@ def setup_plot(ref_lat,ref_lon,left,right,bottom,top,transparent=True):
    return fig,ax,orto
 
 def save_figure(fig,fname,dpi=150, quality=90):
+   LG.info(f'Saving: {fname}')
    fig.savefig(fname, transparent=True, bbox_inches='tight', pad_inches=0,
                       dpi=dpi, quality=quality)
    plt.close('all')
 
 @log_help.timer(LG)
-def terrain(reflat,reflon,left,right,bottom,top):
+def terrain(reflat,reflon,left,right,bottom,top,ve=0.3):
    fig, ax, orto = setup_plot(reflat,reflon,left,right,bottom,top)
 ### RASTER ###################################################################
    files = os.popen('ls terrain_tif/geb*').read().strip().splitlines()
@@ -100,12 +104,13 @@ def terrain(reflat,reflon,left,right,bottom,top):
    D = 2
    mosaic, out_trans = merge(srcs, (left-D, bottom-D, right+D, top+D))
    terrain = mosaic[0,:,:]
-   ls = LightSource(azdeg=315, altdeg=60)
-   ve = 0.7
+   ls = LightSource(azdeg=315, altdeg=65)
    terrain = ls.hillshade(terrain, vert_exag=ve)
+   # from scipy.ndimage.filters import gaussian_filter
+   # ax.imshow(gaussian_filter(terrain,1),
    ax.imshow(terrain, extent=(left-D, right+D, bottom-D, top+D),
                       origin='upper', cmap='gray',
-                      aspect='equal', interpolation='lanczos',
+                      aspect='equal', interpolation='bicubic',
                       zorder=0, transform=orto)
    return fig,ax,orto
 
@@ -132,14 +137,10 @@ def rivers_plot(fig,ax,orto):
    rivers = NaturalEarthFeature('physical', 'rivers_europe',
                                 '10m', facecolor='none')
    ax.add_feature(rivers, lw=2 ,edgecolor='C0',zorder=50)
-   lakes = NaturalEarthFeature('physical', 'lakes', '10m') 
-   ax.add_feature(lakes, lw=2 ,edgecolor='C0',zorder=50)
-   lakes = NaturalEarthFeature('physical', 'lakes_historic', '10m')
-   ax.add_feature(lakes, lw=2 ,edgecolor='C0',zorder=50)
-   lakes = NaturalEarthFeature('physical', 'lakes_pluvial', '10m')
-   ax.add_feature(lakes, lw=2 ,edgecolor='C0',zorder=50)
-   lakes = NaturalEarthFeature('physical', 'lakes_europe', '10m')
-   ax.add_feature(lakes, lw=2 ,edgecolor='C0',zorder=50)
+   for field in ['lakes','lakes_historic','lakes_pluvial','lakes_europe']:
+       water = NaturalEarthFeature('physical', field, '10m')
+       ax.add_feature(water, lw=2 ,edgecolor='C0',
+                      facecolor=cfeature.COLORS['water'],zorder=50)
    return fig,ax,orto
 
 @log_help.timer(LG)
@@ -162,6 +163,14 @@ def ccaa_plot(fig,ax,orto):
    return fig,ax,orto
 
 @log_help.timer(LG)
+def road_plot(fig,ax,orto):
+   roads = NaturalEarthFeature('cultural', 'roads',
+                                            '10m', facecolor='none')
+   ax.add_feature(roads, lw=2 ,edgecolor='w',zorder=51)
+   ax.add_feature(roads, lw=3 ,edgecolor='k',zorder=50)
+   return fig,ax,orto
+
+@log_help.timer(LG)
 def csv_plot(fig,ax,orto, fname,marker='x'):
    Yt,Xt = np.loadtxt(fname,usecols=(0,1),delimiter=',',unpack=True)
    names = np.loadtxt(fname,usecols=(2,),delimiter=',',dtype=str)
@@ -180,6 +189,7 @@ def csv_names_plot(fig,ax,orto, fname):
                               transform=orto,zorder=52)
       txt.set_path_effects([PathEffects.withStroke(linewidth=5,
                                                    foreground='w')])
+      txt.set_clip_on(True)
    return fig,ax,orto
 
 
@@ -220,10 +230,11 @@ def scalar_plot(fig,ax,orto, lons,lats,prop, delta,vmin,vmax,cmap,
        # LG.warning('NaN values found, unable to plot')
        C = None
    if len(inset_label) > 0:
-       ax.text(1,0., inset_label, va='bottom', ha='right', color='k',
-                     fontsize=12, bbox=dict(boxstyle="round",
-                                            ec=None, fc=(1., 1., 1., 0.9)),
-                     zorder=100, transform=ax.transAxes)
+      txt = ax.text(1,0, inset_label, va='bottom', ha='right', color='k',
+                    fontsize=12, bbox=dict(boxstyle="round",
+                                           ec=None, fc=(1,1,1,.9)),
+                    zorder=100, transform=ax.transAxes)
+      txt.set_clip_on(True)
    return C
 
 @log_help.timer(LG)
@@ -258,7 +269,7 @@ def barbs_plot(fig,ax,orto,lons,lats,U,V, n=1,color=(0,0,0,0.75)):
    n = 1
    f = 2
    ax.barbs(lons[::n,::n],lats[::n,::n], U[::n,::n],V[::n,::n],
-            color='C3', length=4, pivot='middle',
+            color=color, length=4, pivot='middle',
             sizes=dict(emptybarb=0.25/f, spacing=0.2/f, height=0.5/f),
             linewidth=0.75, transform=orto)
 
@@ -299,6 +310,70 @@ def plot_colorbar(cmap,delta=4,vmin=0,vmax=60,levels=None,name='cbar',
    fig.savefig(f'{name}.png', transparent=True,
                               bbox_inches='tight', pad_inches=0.1)
    plt.close('all')  #XXX are you sure???
+
+
+def manga(fig,ax,orto,f_manga=f'{here}/task.gps'):
+   ang = np.arctan(1/6371)
+   ang = 1/111
+   try:
+      y,x,Rm = np.loadtxt(f_manga,usecols=(0,1,2),delimiter=',',unpack=True)
+      cont = 0
+      for ix,iy,r in zip(x,y,Rm):
+         if cont == 0: color = 'C1'
+         elif cont == len(y)-2: color = 'C3'
+         elif cont == len(y)-1: color = 'C0'
+         else: color = 'C2'
+         ax.add_patch(Circle(xy=[ix,iy], radius=(r/1000)*ang,
+                             color=color, alpha=0.3, transform=orto, zorder=30))
+         cont += 1
+
+      # spacing of arrows
+      scale = 2
+      aspace = .18 # good value for scale of 1
+      aspace *= scale
+
+      # r is the distance spanned between pairs of points
+      r = [0]
+      for i in range(1,len(x)):
+          dx = x[i]-x[i-1]
+          dy = y[i]-y[i-1]
+          r.append(np.sqrt(dx*dx+dy*dy))
+      r = np.array(r)
+
+      # rtot is a cumulative sum of r, it's used to save time
+      rtot = []
+      for i in range(len(r)):
+          rtot.append(r[0:i].sum())
+      rtot.append(r.sum())
+
+      arrowData = [] # will hold tuples of x,y,theta for each arrow
+      arrowPos = 0   # current point on walk along data
+      rcount = 1
+      while arrowPos < r.sum():
+          x1,x2 = x[rcount-1],x[rcount]
+          y1,y2 = y[rcount-1],y[rcount]
+          da = arrowPos-rtot[rcount]
+          theta = np.arctan2((x2-x1),(y2-y1))
+          X = np.sin(theta)*da+x1
+          Y = np.cos(theta)*da+y1
+          arrowData.append((X,Y,theta))
+          arrowPos+=aspace
+          while arrowPos > rtot[rcount+1]:
+              rcount+=1
+              if arrowPos > rtot[-1]: break
+
+      # could be done in above block if you want
+      for X,Y,theta in arrowData:
+          # use aspace as a guide for size and length of things
+          # scaling factors were chosen by experimenting a bit
+          ax.arrow(X,Y,
+                     np.sin(theta)*aspace/10,np.cos(theta)*aspace/10,
+                     head_width=aspace/3, color='C3', transform=orto)
+      # ax.plot(x,y)
+      ax.plot(x,y, 'C3-', lw=2, transform=orto) #c='C4',s=50,zorder=20)
+   except: pass
+
+
 
 
 # Sounding
