@@ -324,18 +324,23 @@ def skewt_plot(p,tc,tdc,t0,td0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,ps0,ov
    # Automatic skew selection to visualize all the data
    LG.info('Plotting sounding top')
    isin = False  # Both Td and T are within the drawn limits
-   rot = 75
+   rotation = 75
+   rot_1 = rotation   # 1 step behind
+   rot_2 = rotation   # 2 steps behind
    sign = 1
    delta_rot = 1
    i = 0
    LG.info('Adjusting rotation for top sounding')
    LG.debug(f'Initial skewness: {rot}')
-   while not isin and i<20:
+   while not isin and i<21:   # XXX this is not technically guaranteed to work
+                              # but it should be fine most of the time
       try: skew_top.ax.remove()
       except UnboundLocalError: pass
-      rotation = rot+sign*i*delta_rot
+      rotation += sign*delta_rot
+      if rotation == rot_1 or rotation == rot_2:
+         delta_rot *= 0.9
       LG.debug(f'Trying skewness: {rotation:.0f}')
-      skew_top = SkewT(fig, rotation=rot+sign*i*delta_rot, subplot=gs[0,0])
+      skew_top = SkewT(fig, rotation=rotation, subplot=gs[0,0])
  
       # Plot Data
       ## T and Tdew vs pressure
@@ -355,6 +360,8 @@ def skewt_plot(p,tc,tdc,t0,td0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,ps0,ov
       sign = T0-TDmin.magnitude
       sign /= abs(sign)
       i+= 1
+      rot_2 = rot_1
+      rot_1 = rotation
    skew_top.shade_cape(p, tc, parcel_prof)
    skew_top.shade_cin(p, tc, parcel_prof, tdc)
    LG.info('plotted CAPE and CIN')
