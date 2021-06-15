@@ -367,7 +367,7 @@ def skewt_plot(p,tc,tdc,t0,td0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,ps0,ov
    LG.info('plotted CAPE and CIN')
    skew_top.ax.xaxis.set_major_locator(MultipleLocator(5))
    skew_top.ax.set_xlabel('')
-   LG.info('Top sounding rotation decided: {rotation}')
+   LG.info(f'Top sounding rotation decided: {rotation}')
 
    ## Windbarbs
    n = Ninterp//20

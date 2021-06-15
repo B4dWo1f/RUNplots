@@ -27,7 +27,7 @@ do
    echo "Processing The following files:"
    for file in `ls ${FOLDER}/wrfout_d01*`
    do
-      sleep 45   # wait 10 seconds in case the files are being written
+      sleep 45   # wait 45 seconds in case the files are being written
       file1=`echo $file | sed 's/d01/d02/'`
       ls $file
       ls $file1
@@ -38,5 +38,5 @@ do
       mv $file1 ${FOLDER}/processed/
    done
    echo "No more files"
-   sleep 1.5m
+   sleep 10  #XXX unnecessary?
 done
