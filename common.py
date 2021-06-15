@@ -365,7 +365,7 @@ class CalcData(object):
       """
       ## Terrain 
       fname = f'{self.OUT_folder}/terrain.png'
-      if not os.path.isfile(fname) and not force:
+      if not os.path.isfile(fname) or force:
          LG.debug('plotting terrain')
          fig,ax,orto = geo.terrain(self.reflat,self.reflon,*self.borders)
          geo.save_figure(fig,fname,dpi=self.dpi)
@@ -379,7 +379,7 @@ class CalcData(object):
          LG.info(f'{fname} already present')
       ## Parallel and meridian
       fname = f'{self.OUT_folder}/meridian.png'
-      if not os.path.isfile(fname) and not force:
+      if not os.path.isfile(fname) or force:
          LG.debug('plotting meridians')
          fig,ax,orto = geo.setup_plot(self.reflat,self.reflon,*self.borders)
          geo.parallel_and_meridian(fig,ax,orto,*self.borders)
@@ -407,7 +407,7 @@ class CalcData(object):
                                               geo.csv_names_plot,
                                               [f'{here}/takeoffs.csv']) ]
       for fname,func,args in file_func:
-         if not os.path.isfile(fname) and not force:
+         if not os.path.isfile(fname) or force:
             LG.debug(f"plotting {fname.split('/')[-1]}")
             fig,ax,orto=geo.setup_plot(self.reflat,self.reflon,*self.borders)
             func(fig,ax,orto,*args)
