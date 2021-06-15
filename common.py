@@ -260,7 +260,7 @@ class CalcData(object):
       print('->',time()-start)
       return XXX
    @log_help.timer(LG)
-   def sounding(self, date0, lat0, lon0,place='',fout=None):
+   def sounding(self, date0, lat0, lon0,code='',place='',fout=None):
       """
       Plots sounding for date0 and coordinates (lat0,lon0)
       date0: [datetime] date for the requested sounding
@@ -298,12 +298,12 @@ class CalcData(object):
       ps,overcast,cumulus,\
       lcl_p, lcl_t,\
       parcel_prof = post.sounding(self.ncfile, lat0, lon0,
-                                                    self.pressure,
-                                                    self.tc, self.td,
-                                                    self.tc2m, self.td2m,
-                                                    self.ua,self.va,
-                                                    self.terrain,
-                                                    self.lats,self.lons)
+                                               self.pressure,
+                                               self.tc, self.td,
+                                               self.tc2m, self.td2m,
+                                               self.ua,self.va,
+                                               self.terrain,
+                                               self.lats,self.lons)
       # Settings for saving image
       latlon = f'({lat:.3f},{lon:.3f})'
       HH = self.date.strftime('%H%M')
@@ -311,10 +311,10 @@ class CalcData(object):
          place = f'{lat0:.3f},{lon0:.3f}'
          LG.debug(f'place not provided. Using: {place}')
       if fout == None:
-         fout = f'{self.OUT_folder}/{HH}_sounding_{place}.png'
+         fout = f'{self.OUT_folder}/{HH}_sounding_{code}.png'
          LG.debug(f'fout not provided. Using: {fout}')
       else: LG.debug(f'fout was provided by user')
-      title = f"{place.capitalize()}"
+      title = f"{place}"
       title += f" {(self.date+UTCshift).strftime('%d/%m/%Y-%H:%M')}"
       LG.debug(f'Title: {title}')
 
@@ -397,6 +397,8 @@ class CalcData(object):
                    (f'{self.OUT_folder}/ccaa.png', geo.ccaa_plot,[]),
                    (f'{self.OUT_folder}/task.png',geo.manga,
                                                   [f'{here}/task.gps']),
+                   (f'{self.OUT_folder}/peaks.png', geo.csv_plot,
+                                                [f'{here}/peaks.csv','^']),
                    (f'{self.OUT_folder}/cities.png', geo.csv_plot,
                                                 [f'{here}/cities.csv','o']),
                    (f'{self.OUT_folder}/cities_names.png', geo.csv_names_plot,
