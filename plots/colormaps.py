@@ -130,7 +130,7 @@ col11 = np.array([177,  89,  40])
 col12 = np.array([ 90, 219, 229])
 col13 = np.array([  0, 158, 170])
 
-cols = [col0,col1,col2,col3,col4,col5] #,col6,col7,col8,col9,col9]
+cols = [col2,col3,col0,col1,col4,col5] #,col6,col7,col8,col9,col9]
 
 stops = [C/255 for C in cols]
 Ns = [3, 7, 15, 28, 28]

@@ -74,8 +74,11 @@ def setup_plot(ref_lat,ref_lon,left,right,bottom,top,transparent=True):
    orto = ccrs.PlateCarree()
    projection = ccrs.LambertConformal(ref_lon,ref_lat)
    # projection = ccrs.RotatedPole(pole_longitude=-150, pole_latitude=37.5)
+   # projection = ccrs.PlateCarree()
+   # projection = ccrs.Mercator(-3,34,50)
 
    extent = left, right, bottom, top
+   # extent = left-0.055, right+0.01, bottom-0.025, top+0.025
    fig = plt.figure(figsize=(11,9)) #, frameon=False)
    # ax = plt.axes(projection=projection)
    ax = fig.add_axes([0,0,0.99,1],projection=projection)
@@ -195,7 +198,7 @@ def csv_names_plot(fig,ax,orto, fname):
 
 @log_help.timer(LG)
 def scalar_plot(fig,ax,orto, lons,lats,prop, delta,vmin,vmax,cmap,
-                                                 levels=[], inset_label=''):
+                                       levels=[], inset_label='',prop_name=''):
    """
    Plot a scalar property. 
    fig: matplotlib figure to plot in. XXX unnecessary??
@@ -211,6 +214,12 @@ def scalar_plot(fig,ax,orto, lons,lats,prop, delta,vmin,vmax,cmap,
    levels = [#] : the list provided is respected
    inset_label: text to appear in the lower right corner of the graph
    """
+   LG.debug(f'Plotting {prop_name}')
+   try:
+       msg = f'lims: {vmin}/{np.min(prop).values:1f}/{np.max(prop).values:1f}/{vmax}'
+   except:
+       msg = f'lims: {vmin}/{np.min(prop):1f}/{np.max(prop):1f}/{vmax}'
+   LG.debug(msg)
    if type(levels) == type(None):
       norm = None
    else:

@@ -399,6 +399,8 @@ class CalcData(object):
                                                   [f'{here}/task.gps']),
                    (f'{self.OUT_folder}/peaks.png', geo.csv_plot,
                                                 [f'{here}/peaks.csv','^']),
+                   (f'{self.OUT_folder}/peaks_names.png', geo.csv_names_plot,
+                                                [f'{here}/peaks.csv']),
                    (f'{self.OUT_folder}/cities.png', geo.csv_plot,
                                                 [f'{here}/cities.csv','o']),
                    (f'{self.OUT_folder}/cities_names.png', geo.csv_names_plot,
@@ -444,9 +446,10 @@ class CalcData(object):
                'wstar', 'bldepth', 'cape', 'zsfclcl', 'zblcl', 'tdif', 'rain',
                'blcloudpct', 'lowfrac', 'midfrac', 'highfrac']
       HH = self.date.strftime('%H%M')
-      date_label = 'valid: ' + self.date.strftime( fmt ) + 'z\n'
-      date_label +=  'GFS: ' + self.GFS_batch.strftime( fmt ) + '\n'
-      date_label += 'plot: ' + self.creation_date.strftime( fmt+' ' )
+      fmt1 =  '%Y-%m-%d_%H:%M'
+      date_label = 'valid: ' + self.date.strftime( fmt1 ) + 'z\n'
+      date_label +=  'GFS: ' + self.GFS_batch.strftime( fmt1 ) + '\n'
+      date_label += 'plot: ' + self.creation_date.strftime( fmt1+' ' )
       for prop in props:
          LG.info(prop)
          factor,vmin,vmax,delta,levels,cmap,units,title = post.scalar_props('plots.ini', prop)
@@ -456,7 +459,7 @@ class CalcData(object):
          C = geo.scalar_plot(fig,ax,orto, self.lons,self.lats,
                                    wrf_properties[prop]*factor,
                             delta,vmin,vmax,cmap, levels=levels,
-                            inset_label=date_label)
+                            inset_label=date_label,prop_name=prop)
          fname = f'{self.OUT_folder}/{HH}_{prop}.png'
          geo.save_figure(fig,fname,dpi=self.dpi)
          for iz,zborder in enumerate(zooms):
