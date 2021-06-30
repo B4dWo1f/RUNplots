@@ -37,6 +37,6 @@ do
       mv $file ${FOLDER}/processed/
       mv $file1 ${FOLDER}/processed/
    done
-   echo "No more files"
+   # echo "No more files"
    sleep 10  #XXX unnecessary?
 done

@@ -333,7 +333,7 @@ def manga(fig,ax,orto,f_manga=f'{here}/task.gps'):
          elif cont == len(y)-1: color = 'C0'
          else: color = 'C2'
          ax.add_patch(Circle(xy=[ix,iy], radius=(r/1000)*ang,
-                             color=color, alpha=0.3, transform=orto, zorder=30))
+                             color=color, alpha=0.8, transform=orto, zorder=30))
          cont += 1
 
       # spacing of arrows
@@ -377,7 +377,7 @@ def manga(fig,ax,orto,f_manga=f'{here}/task.gps'):
           # scaling factors were chosen by experimenting a bit
           ax.arrow(X,Y,
                      np.sin(theta)*aspace/10,np.cos(theta)*aspace/10,
-                     head_width=aspace/3, color='C3', transform=orto)
+                     head_width=aspace/30, color='C3', transform=orto)
       # ax.plot(x,y)
       ax.plot(x,y, 'C3-', lw=2, transform=orto) #c='C4',s=50,zorder=20)
    except: pass
