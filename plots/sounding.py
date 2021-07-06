@@ -133,7 +133,7 @@ def skewt_plot(p,tc,tdc,t0,td0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,ps0,ov
    Tmed = tc[n_med]
    TDmed = tdc[n_med]
    Pmax = 1000 * p.units  ############# lower limit
-   LG.info(f'Breaking vertical levels: {Pmax:.0f}, {Pmed:.0f}, {Pmin:.0f}')
+   LG.info(f'Breaking vertical levels [{n_med}]: {Pmax:.0f}, {Pmed:.0f}, {Pmin:.0f}')
 
 
    #############
