@@ -41,7 +41,7 @@ class CalcData(object):
       save_data: [bool] extract all available data in numpy binary format
       self.prevnc: [netCDF4.Dataset] with previous hour for plotting rain
       """
-      self.dpi=90
+      self.dpi = 90
       if not os.path.isfile(fname):
          LG.critical(f'FileNotFound: {fname}')
          exit()
@@ -441,10 +441,10 @@ class CalcData(object):
             'bldepth':self.bldepth+self.terrain,  #'bsratio':bsratio,
             'rain':self.rain, 'blcloudpct':self.blcloudpct, 'tdif':self.tdif,
             'lowfrac':self.low_cloudfrac, 'midfrac':self.mid_cloudfrac,
-            'highfrac':self.high_cloudfrac}
+            'highfrac':self.high_cloudfrac, 't2m':self.tc2m}
       props = ['sfcwind', 'blwind', 'bltopwind', 'wblmaxmin', 'hglider',
                'wstar', 'bldepth', 'cape', 'zsfclcl', 'zblcl', 'tdif', 'rain',
-               'blcloudpct', 'lowfrac', 'midfrac', 'highfrac']
+               'blcloudpct', 'lowfrac', 'midfrac', 'highfrac', 't2m']
       HH = self.date.strftime('%H%M')
       fmt1 =  '%Y-%m-%d_%H:%M'
       date_label = 'valid: ' + self.date.strftime( fmt1 ) + 'z\n'
