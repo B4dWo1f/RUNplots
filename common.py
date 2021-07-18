@@ -164,6 +164,7 @@ class CalcData(object):
                                          self.terrain,
                                          self.bldepth,self.tc, self.td,
                                          self.qvapor)
+      self.gust = 2*self.wstar + 0.5*(self.bltopwind-self.wspd10) + self.wspd10
 
    @log_help.timer(LG)
    def save_props(self,folder=''):
@@ -439,11 +440,13 @@ class CalcData(object):
             'wstar':self.wstar, 'zsfclcl':self.zsfclcl, 'zblcl':self.zblcl,
             'cape':self.CAPE, 'wblmaxmin':self.wblmaxmin,
             'bldepth':self.bldepth+self.terrain,  #'bsratio':bsratio,
+            'gust': self.gust,
+            # 2*self.wstar + 0.5*(self.bltopwind-self.wspd10) + self.wspd10,
             'rain':self.rain, 'blcloudpct':self.blcloudpct, 'tdif':self.tdif,
             'lowfrac':self.low_cloudfrac, 'midfrac':self.mid_cloudfrac,
             'highfrac':self.high_cloudfrac, 't2m':self.tc2m}
       props = ['sfcwind', 'blwind', 'bltopwind', 'wblmaxmin', 'hglider',
-               'wstar', 'bldepth', 'cape', 'zsfclcl', 'zblcl', 'tdif', 'rain',
+               'wstar', 'bldepth', 'cape', 'zsfclcl', 'zblcl', 'tdif', 'gust', 'rain',
                'blcloudpct', 'lowfrac', 'midfrac', 'highfrac', 't2m']
       HH = self.date.strftime('%H%M')
       fmt1 =  '%Y-%m-%d_%H:%M'
