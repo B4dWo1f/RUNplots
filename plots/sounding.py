@@ -222,9 +222,9 @@ def skewt_plot(p,tc,tdc,t0,td0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,ps0,ov
    ## Mixing Ratios
    w = np.array([0.001, 0.002, 0.003, 0.005, 0.008, 0.012, 0.020]).reshape(-1, 1)
    # Vertical extension for the mixing ratio lines
-   p_levs = units.hPa * np.linspace(1000, 600, 7)
-   skew_bot.plot_mixing_lines(mixing_ratio=w, pressure=p_levs, colors='lime',
-                              linestyle='dotted',linewidths=1)
+   p_levs = units.hPa * np.linspace(1000, 650, 7)
+   skew_bot.plot_mixing_lines(mixing_ratio=w, pressure=p_levs, colors='C2',
+                              linestyle='--',linewidths=1)
 
    ## Setup axis
    # Y axis

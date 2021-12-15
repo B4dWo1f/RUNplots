@@ -279,7 +279,7 @@ rain = clouds_rain(ncfile,prev=prev,my_cache=my_cache)
    LG.debug(f'CAPE: {MCAPE.shape}')
    LG.debug(f'CIN: {MCIN.shape}')
    LG.debug(f'LCL: {LCL.shape}')
-   return lats,lons,u,v,w,u10,v10,wspd,wdir,wspd10,wdir10,pressure,heights,terrain,bldepth,hfx,qcloud,qvapor,tc,td,t2m,td2m,tsk,LCL,MCAPE,rain,low_frac,mid_frac,high_frac,blcloudpct
+   return lats,lons,u,v,w,u10,v10,wspd,wdir,wspd10,wdir10,pressure,slp,heights,terrain,bldepth,hfx,qcloud,qvapor,tc,td,t2m,td2m,tsk,LCL,MCAPE,rain,low_frac,mid_frac,high_frac,blcloudpct
 
 
 @log_help.timer(LG)

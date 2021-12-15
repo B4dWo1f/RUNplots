@@ -6,7 +6,7 @@ here = os.path.dirname(os.path.realpath(__file__))
 import log_help
 import logging
 LG = logging.getLogger(__name__)
-LG.setLevel(logging.DEBUG)
+LG.setLevel(logging.INFO)
 
 import numpy as np
 import wrf_calcs.extract as ex
@@ -138,7 +138,7 @@ class CalcData(object):
       self.lats, self.lons,\
       self.u,self.v,self.w, self.u10,self.v10,\
       self.wspd, self.wdir, self.wspd10, self.wdir10,\
-      self.pressure, self.heights, self.terrain,\
+      self.pressure, self.slp, self.heights, self.terrain,\
       self.bldepth, self.hfx, self.qcloud, self.qvapor,\
       self.tc, self.td, self.tc2m, self.td2m, self.tsk,\
       self.LCL, self.CAPE, self.rain,\
@@ -440,13 +440,14 @@ class CalcData(object):
             'wstar':self.wstar, 'zsfclcl':self.zsfclcl, 'zblcl':self.zblcl,
             'cape':self.CAPE, 'wblmaxmin':self.wblmaxmin,
             'bldepth':self.bldepth+self.terrain,  #'bsratio':bsratio,
-            'gust': self.gust,
+            'gust': self.gust, 'slp': self.slp,
             # 2*self.wstar + 0.5*(self.bltopwind-self.wspd10) + self.wspd10,
             'rain':self.rain, 'blcloudpct':self.blcloudpct, 'tdif':self.tdif,
             'lowfrac':self.low_cloudfrac, 'midfrac':self.mid_cloudfrac,
             'highfrac':self.high_cloudfrac, 't2m':self.tc2m}
       props = ['sfcwind', 'blwind', 'bltopwind', 'wblmaxmin', 'hglider',
-               'wstar', 'bldepth', 'cape', 'zsfclcl', 'zblcl', 'tdif', 'gust', 'rain',
+               'wstar', 'bldepth', 'cape', 'zsfclcl', 'zblcl', 'tdif', 'gust',
+               'rain',
                'blcloudpct', 'lowfrac', 'midfrac', 'highfrac', 't2m']
       HH = self.date.strftime('%H%M')
       fmt1 =  '%Y-%m-%d_%H:%M'

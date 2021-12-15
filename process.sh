@@ -24,7 +24,7 @@ export RUN_BY_CRON=True
 
 while [ ! -f $RUN_DIR/STOP ]
 do
-   for file in `ls ${FOLDER}/wrfout_d01*`
+   for file in `ls ${FOLDER}/wrfout_d01* 2> /dev/null`
    do
       echo "Processing The following files:"
       sleep 45   # wait 45 seconds in case the files are being written
