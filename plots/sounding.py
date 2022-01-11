@@ -188,8 +188,10 @@ def skewt_plot(p,tc,tdc,t0,td0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,ps0,ov
    ## Parcel profile
    skew_bot.plot(p, parcel_prof, 'k', linewidth=1)
    skew_bot.plot(lcl_p, lcl_t, 'k.')
-   skew_bot.plot(cu_base_p, cu_base_t, 'C3o', zorder=100)
-   skew_bot.plot(p[0], t0, 'ko', zorder=100)
+   skew_bot.plot(cu_base_p, cu_base_t, 'ko', zorder=100)
+   # skew_bot.plot(cu_base_p, cu_base_t, 'C3o', zorder=100)
+   skew_bot.plot(p[0], t0, 'C3o', zorder=100)
+   # skew_bot.plot(p[0], t0, 'ko', zorder=100)
    skew_bot.plot([p[0].magnitude,lcl_p.magnitude],
                  [td0.magnitude,lcl_t.magnitude],
                  color='C2',ls='--',lw=1, zorder=0)
