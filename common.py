@@ -143,9 +143,12 @@ class CalcData(object):
       self.tc, self.td, self.tc2m, self.td2m, self.tsk,\
       self.LCL, self.CAPE, self.rain,\
       self.low_cloudfrac, self.mid_cloudfrac, self.high_cloudfrac,\
-      self.blcloudpct = ex.all_properties(self.ncfile,\
-                                          prev=self.prevnc,\
-                                          my_cache=self.cache)
+      self.blcloudpct,\
+      self.u1500, self.v1500, self.wspd1500, self.u2000, self.v2000,\
+      self.wspd2000, self.u2500, self.v2500, self.wspd2500, self.u3000,\
+      self.v3000, self.wspd3000 = ex.all_properties(self.ncfile,\
+                                                    prev=self.prevnc,\
+                                                    my_cache=self.cache)
       LG.info('All variables imported')
 
    @log_help.timer(LG)
@@ -436,19 +439,23 @@ class CalcData(object):
                     snapshots of the maps
       """
       wrf_properties = {'sfcwind':self.wspd10, 'blwind':self.blwind,
-            'bltopwind':self.bltopwind, 'hglider':self.hglider,
+            'bltopwind':self.bltopwind,
+            'wind1500':self.wspd1500, 'wind2000':self.wspd2000,
+            'wind2500':self.wspd2500, 'wind3000':self.wspd3000,
+            'hglider':self.hglider,
             'wstar':self.wstar, 'zsfclcl':self.zsfclcl, 'zblcl':self.zblcl,
             'cape':self.CAPE, 'wblmaxmin':self.wblmaxmin,
-            'bldepth':self.bldepth+self.terrain,  #'bsratio':bsratio,
-            'gust': self.gust, 'slp': self.slp,
+            #'bldepth':self.bldepth+self.terrain,  #'bsratio':bsratio,
+            'gust': self.gust, #'slp': self.slp,
             # 2*self.wstar + 0.5*(self.bltopwind-self.wspd10) + self.wspd10,
             'rain':self.rain, 'blcloudpct':self.blcloudpct, 'tdif':self.tdif,
             'lowfrac':self.low_cloudfrac, 'midfrac':self.mid_cloudfrac,
             'highfrac':self.high_cloudfrac, 't2m':self.tc2m}
-      props = ['sfcwind', 'blwind', 'bltopwind', 'wblmaxmin', 'hglider',
-               'wstar', 'bldepth', 'cape', 'zsfclcl', 'zblcl', 'tdif', 'gust',
-               'rain',
-               'blcloudpct', 'lowfrac', 'midfrac', 'highfrac', 't2m']
+      props = wrf_properties.keys()
+      # props = ['sfcwind', 'blwind', 'bltopwind','wind1500','wind2000','wind2500', 'wind3000', 'wblmaxmin', 'hglider',
+      #          'wstar', 'bldepth', 'cape', 'zsfclcl', 'zblcl', 'tdif', 'gust',
+      #          'rain',
+      #          'blcloudpct', 'lowfrac', 'midfrac', 'highfrac', 't2m']
       HH = self.date.strftime('%H%M')
       fmt1 =  '%Y-%m-%d_%H:%M'
       date_label = 'valid: ' + self.date.strftime( fmt1 ) + 'z\n'
@@ -481,8 +488,13 @@ class CalcData(object):
                                     name=fname,units=units,
                                     fs=15,norm=None,extend='max')
             LG.info('plotted colorbar')
-      names = ['sfcwind','blwind','bltopwind']
+      names = ['sfcwind','wind1500','wind2000','wind2500','wind3000',
+               'blwind','bltopwind']
       winds = [[self.u10.values, self.v10.values],
+               [self.u1500.values, self.v1500.values],
+               [self.u2000.values, self.v2000.values],
+               [self.u2500.values, self.v2500.values],
+               [self.u3000.values, self.v3000.values],
                [self.ublavgwind, self.vblavgwind],
                [self.utop, self.vtop]]
       for wind,name in zip(winds,names):
