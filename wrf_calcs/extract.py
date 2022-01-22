@@ -254,6 +254,26 @@ def all_properties(ncfile, prev=None, my_cache=None):
    ## Wind
    u, v, w, u10, v10, wspd, wdir, wspd10, wdir10 = wind(ncfile, my_cache)
 
+   ##############################
+   LG.debug('Interpolation to 1500, 2000, 2500 and 3000m levels')
+   ## 1500
+   u1500 = wrf.interplevel(u, heights, 1500)
+   v1500 = wrf.interplevel(v, heights, 1500)
+   wspd1500 = wrf.interplevel(wspd, heights, 1500)
+   ## 2000
+   u2000 = wrf.interplevel(u, heights, 2000)
+   v2000 = wrf.interplevel(v, heights, 2000)
+   wspd2000 = wrf.interplevel(wspd, heights, 2000)
+   ## 2500
+   u2500 = wrf.interplevel(u, heights, 2500)
+   v2500 = wrf.interplevel(v, heights, 2500)
+   wspd2500 = wrf.interplevel(wspd, heights, 2500)
+   ## 3000
+   u3000 = wrf.interplevel(u, heights, 3000)
+   v3000 = wrf.interplevel(v, heights, 3000)
+   wspd3000 = wrf.interplevel(wspd, heights, 3000)
+   ##############################
+
    ## Necessary for DrJack's routines
    # Surface sensible heat flux in________________________________[W/m²] (ny,nx)
    hfx = getvar(ncfile, "HFX", cache=my_cache) 
@@ -279,8 +299,7 @@ rain = clouds_rain(ncfile,prev=prev,my_cache=my_cache)
    LG.debug(f'CAPE: {MCAPE.shape}')
    LG.debug(f'CIN: {MCIN.shape}')
    LG.debug(f'LCL: {LCL.shape}')
-   return lats,lons,u,v,w,u10,v10,wspd,wdir,wspd10,wdir10,pressure,slp,heights,terrain,bldepth,hfx,qcloud,qvapor,tc,td,t2m,td2m,tsk,LCL,MCAPE,rain,low_frac,mid_frac,high_frac,blcloudpct
-
+   return lats,lons,u,v,w,u10,v10,wspd,wdir,wspd10,wdir10,pressure,slp,heights,terrain,bldepth,hfx,qcloud,qvapor,tc,td,t2m,td2m,tsk,LCL,MCAPE,rain,low_frac,mid_frac,high_frac,blcloudpct,u1500,v1500,wspd1500,u2000,v2000,wspd2000,u2500,v2500,wspd2500,u3000,v3000,wspd3000
 
 @log_help.timer(LG)
 def sounding(ncfile,cache=None):
