@@ -239,7 +239,7 @@ if __name__ == '__main__':
    if not is_cron: log_help.screen_handler(LG, lv=lv)
    LG.info(f'Starting: {__file__}')
    ##############################################################################
-   date_req = dt.datetime(2021,5,22)
+   date_req = dt.datetime(2021,7,18)
    lat,lon = 41.078854,-3.707029 # arcones ladera
    lat,lon = 41.105178018195375, -3.712531733865551     # arcibes cantera
    # lat,lon = 41.078887241417604, -3.7054138385286515  # arcones despegue
@@ -252,11 +252,18 @@ if __name__ == '__main__':
    P = common.get_config()
    data_folder = expanduser( P['system']['output_folder'] )
    OUT_folder = expanduser( P['system']['plots_folder'] )
+   print(data_folder)
+   print(OUT_folder)
+   output_folder,plots_folder,data_folder = common.get_folders()
+   output_folder += '/processed'
+   print(data_folder)
+   print(output_folder)
+   print(plots_folder)
    ut.check_directory(data_folder,True)
    ut.check_directory(OUT_folder,False)
 
    place = ''
    fout = 'meteogram.png'
    dom = 'd02'
-   fname = get_meteogram(date_req, lat, lon, data_folder, OUT_folder, place, dom, fout)
+   fname = get_meteogram(date_req, lat, lon, output_folder, plots_folder, place, dom, fout)
    print('Saved in:',fname)
