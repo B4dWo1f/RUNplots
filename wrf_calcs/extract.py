@@ -407,17 +407,6 @@ def meteogram_hour(fname,lat,lon):
    # OvercastDevelopment Cloudbase__________________________________[m?] (ny,nx)
    pmb = 0.01*(p.values+pb.values) # press is vertical coordinate in mb
    zblcl = ut.calc_blclheight(qvapor,heights,terrain,bldepth,pmb,tc)
-   # Mask zsfclcl, zblcl________________________________________________________
-   ## Mask Cu Pot > 0
-   zsfclcldif = bldepth + terrain - zsfclcl
-   null = 0. * zsfclcl
-   # cu_base_pote = np.where(zsfclcldif>0, zsfclcl, null)
-   zsfclcl = np.where(zsfclcldif>0, zsfclcl, null)
-   ## Mask Overcast dev Pot > 0
-   zblcldif = bldepth + terrain - zblcl
-   null = 0. * zblcl
-   # over_base_pote = np.where(zblcldif>0, zblcl, null)
-   zblcl = np.where(zblcldif>0, zblcl, null)
    # Clouds__________________________________________________________[%] (ny,nx)
    low_cloudfrac  = getvar(ncfile, "low_cloudfrac", cache=my_cache)
    mid_cloudfrac  = getvar(ncfile, "mid_cloudfrac", cache=my_cache)
