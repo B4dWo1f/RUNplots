@@ -192,7 +192,10 @@ def find_cross(profile,tc,p,Ninterp=500):
 def get_cloud_base(parcel_profile,p,tc,lcl_p=None,lcl_t=None):
    """
    requires and keeps pint.units
+   returns the crossing of the parcel profile with the Tc
    """
+   #XXX when I made this function, only god and me understood how it worked
+   # now only god knows
    LG.debug('Find cloud base')
    # Plot cloud base
    p_base, t_base = find_cross(parcel_profile, tc, p)

@@ -137,6 +137,40 @@ import common
 
 def get_meteogram(date0, lat0,lon0, data_fol, OUT_fol,place='', dom='d02',
                                                                 fout=None):
+   """
+   date0: [date/datetime] when the meteogram is requested
+   lat0,lon0: [float] latitude and longitude for the meteogram
+   data_fol: [string] path to the *.npy files
+   OUT_fol: [string] path to save the meteogram png file
+   place: [string] if provided it will be the title of the meteogram (name of
+                                                                      the place)
+   dom: [string] domain to get the data from
+   fout: [string] name of the meteogram png file
+   """
+   print('hey sexy!')
+   print(date0)
+   print(lat0)
+   print(lon0)
+   print(data_fol)
+   print(OUT_fol)
+   print(place)
+   print(dom)
+   print(fout)
+   print('-'*80)
+
+   # First, lets find all the available files
+   fol_date = f"{data_fol}/{dom}/{date0.strftime('%Y/%m/%d')}"
+   com = f"ls {fol_date}/*.npy"
+   all_files = os.popen(com).read().strip().split()
+   all_files = [x.split('/')[-1] for x in all_files]
+   # Avaliable Properties
+   properties = set([x.replace('.npy','').split('_')[1] for x in all_files])
+   properties = sorted(properties)
+   # Avaliable Hours
+   hours = set([x.split('_')[0] for x in all_files])
+   hours = [int(x)//100 for x in hours]
+   hours = sorted(hours)
+
    ## Read data
    hours = list(range(8,22))
    fmt_wrfout = '%Y-%m-%d_%H'
@@ -152,6 +186,10 @@ def get_meteogram(date0, lat0,lon0, data_fol, OUT_fol,place='', dom='d02',
    from time import time
    # lat,lon,p,tc,tdc,t0,td0, u,v,gnd,wstar,hcrit = A.get_meteogram(date0, lat0, lon0,fout=fout)  #XXX missing place
    heights, windU, windV, BL, Hcrit, Wstar,Zcu,Zover = [],[],[],[],[],[],[],[]
+   for h in hours:
+      M = np.load(f"{fol_date}/{h:02d}00_heights.npy")
+      print(M.shape)
+   exit()
    for fname in files:
       start = time()
       A = common.CalcData(fname, OUT_folder,read_all=False)
@@ -239,7 +277,7 @@ if __name__ == '__main__':
    if not is_cron: log_help.screen_handler(LG, lv=lv)
    LG.info(f'Starting: {__file__}')
    ##############################################################################
-   date_req = dt.datetime(2021,7,18)
+   date_req = dt.datetime(2021,5,22)
    lat,lon = 41.078854,-3.707029 # arcones ladera
    lat,lon = 41.105178018195375, -3.712531733865551     # arcibes cantera
    # lat,lon = 41.078887241417604, -3.7054138385286515  # arcones despegue
@@ -252,18 +290,11 @@ if __name__ == '__main__':
    P = common.get_config()
    data_folder = expanduser( P['system']['output_folder'] )
    OUT_folder = expanduser( P['system']['plots_folder'] )
-   print(data_folder)
-   print(OUT_folder)
-   output_folder,plots_folder,data_folder = common.get_folders()
-   output_folder += '/processed'
-   print(data_folder)
-   print(output_folder)
-   print(plots_folder)
    ut.check_directory(data_folder,True)
    ut.check_directory(OUT_folder,False)
 
    place = ''
    fout = 'meteogram.png'
    dom = 'd02'
-   fname = get_meteogram(date_req, lat, lon, output_folder, plots_folder, place, dom, fout)
+   fname = get_meteogram(date_req, lat, lon, data_folder, OUT_folder, place, dom, fout)
    print('Saved in:',fname)
