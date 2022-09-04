@@ -142,7 +142,7 @@ and the heights in the other:
 #folder = '../../Documents/storage/WRFOUT/Spain6_1'
 #############
 
-com = f"ls {output_folder}/wrfout_d02_{target_date.strftime('%Y-%m-%d')}_*"
+com = f"ls {output_folder}/processed/wrfout_d02_{target_date.strftime('%Y-%m-%d')}_*"
 files = os.popen(com).read().strip().split()
 files = sorted(files)
 dates = [get_datetime(f)[1] for f in files]
@@ -306,9 +306,9 @@ for iplace in range(len(Points)):
    hourss = duplicate_first_row(hourss, side='r', value=max(hours_row)+1)
    W = duplicate_first_row(W, side='r')
    H = duplicate_first_row(H, side='r')
-   C = ax.contourf(hourss,H,W, levels=range(0,60,4), vmin=0, vmax=60, cmap=mcmaps.WindSpeed,zorder=0,alpha=.7)
+   C = ax.contourf(hourss,H,W, levels=range(0,60,4), vmin=0, vmax=60, cmap=mcmaps.WindSpeed, extend='max',zorder=0,alpha=.7)
    # Thermals
-   ax.bar(hours_row, BL[:,i,j], color=BL_color, ec=thermal_color, zorder=1)
+   # ax.bar(hours_row, BL[:,i,j], color=BL_color, ec=thermal_color, zorder=1)
    ax.bar(hours_row, hcrit[:,i,j], width=0.6, color=thermal_color, zorder=2)
    for x,y,w in zip(hours_row, hcrit[:,i,j], wstar[:,i,j]):
       if w == 0.: continue

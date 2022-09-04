@@ -1,6 +1,7 @@
 __pycache__
 **.f90
 **.log
+**.pid
 **.err
 **.png
 titles.txt
