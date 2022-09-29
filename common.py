@@ -8,6 +8,7 @@ import logging
 LG = logging.getLogger(__name__)
 LG.setLevel(logging.INFO)
 
+import json
 import numpy as np
 import wrf_calcs.extract as ex
 import wrf_calcs.post_process as post
@@ -171,6 +172,9 @@ class CalcData(object):
 
    @log_help.timer(LG)
    def save_props(self,folder=''):
+      """
+      Save the relevant properties in numpy format
+      """
       if len(folder) == 0: folder = self.DATA_folder
       LG.info(f'Saving DATA in: {folder}')
       prefix = self.date.strftime('%H%M')
@@ -182,7 +186,6 @@ class CalcData(object):
                              'lon':float(self.bounds.bottom_left.lon)},
                  'top_right':{'lat':float(self.bounds.top_right.lat),
                               'lon':float(self.bounds.top_right.lon)}}
-      import json
       with open(f'{folder}/{prefix}_borders.json', 'w') as fp:
          json.dump(borders, fp)
 

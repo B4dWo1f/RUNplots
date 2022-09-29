@@ -136,8 +136,8 @@ def calc_hcrit( wstar, terrain, bldepth):
    LG.info('Calculating hcrit')
    hcrit_function = drjack_num.calc_hcrit
    hcrit = hcrit_function( wstar.transpose(), terrain.transpose(),
-                           bldepth.transpose() )
-   return hcrit.transpose()
+                           bldepth.transpose() ).transpose()
+   return hcrit
 
 
 def calc_blcloudbase( qcloud,  heights, terrain, bldepth, cwbasecriteria,
