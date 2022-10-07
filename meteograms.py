@@ -212,6 +212,7 @@ hcrit = ut.calc_hcrit(wstar, terrain.values, BL.values)
 cumulus  = ut.calc_sfclclheight(pressure, T, TD, heights, terrain, BL)
 overcast = ut.calc_blclheight(qvapor.values,heights.values,terrain.values,
                               BL.values,pmb,T.values)
+hglider = np.maximum(np.minimum(overcast, cumulus), hcrit)
 #################################################################################
 hours = np.stack([hours_row for _ in range(wspd.shape[1])])
 LG.debug(f'Time reading: {time()-told}')
@@ -228,7 +229,7 @@ LG.debug(f'T2: {T2m.values.shape}')
 LG.debug(f'TD2: {TD2m.values.shape}')
 LG.debug(f'HFX: {HFX.values.shape}')
 LG.debug(f'wstar: {wstar.shape}')
-LG.debug(f'hcrit: {hcrit.shape}')
+LG.debug(f'hglider: {hglider.shape}')
 LG.debug(f'terrain: {terrain.values.shape}')
 LG.debug(f'low clouds: {low.values.shape}')
 LG.debug(f'mid clouds: {mid.values.shape}')
@@ -309,8 +310,8 @@ for iplace in range(len(Points)):
    C = ax.contourf(hourss,H,W, levels=range(0,60,4), vmin=0, vmax=60, cmap=mcmaps.WindSpeed, extend='max',zorder=0,alpha=.7)
    # Thermals
    # ax.bar(hours_row, BL[:,i,j], color=BL_color, ec=thermal_color, zorder=1)
-   ax.bar(hours_row, hcrit[:,i,j], width=0.6, color=thermal_color, zorder=2)
-   for x,y,w in zip(hours_row, hcrit[:,i,j], wstar[:,i,j]):
+   ax.bar(hours_row, hglider[:,i,j], width=0.6, color=thermal_color, zorder=2)
+   for x,y,w in zip(hours_row, hglider[:,i,j], wstar[:,i,j]):
       if w == 0.: continue
       if y-GND < 100 : continue
       t = f'{w}'[:3]+' m/s'
@@ -334,13 +335,16 @@ for iplace in range(len(Points)):
    # Ground
    rect = Rectangle((-24,0), 48, GND, facecolor=terrain_color, zorder=99)
    ax.add_patch(rect)
+
    # Settings
    ax.set_xticks(hours_row)
    ax.set_xticklabels([f'{x}:00' for x in hours_row])
-   ax.set_xlim([min(hours_row)-.5,max(hours_row)+.5])
+   xmin = min(hours_row)-.5
+   xmax = max(hours_row)+.5
+   ax.set_xlim([xmin, xmax])
    ymin = GND-100
    ymax = np.max([np.max(BL[:,i,j]),
-                  np.max(hcrit[:,i,j]),
+                  np.max(hglider[:,i,j]),
                   np.max(cumulus[:,i,j]),
                   np.max(overcast[:,i,j]) ]) +500
    # ax.set_ylim([GND-100, np.max()+500])
@@ -349,7 +353,8 @@ for iplace in range(len(Points)):
    ax.yaxis.set_minor_locator(MultipleLocator(100))
    ax.set_ylabel('Height (m)')
    # Grid
-   ax.grid(False)
+   ax.text(xmax,ymax-1,f"plot: {dt.datetime.now().strftime('%d/%m-%H:%M')}",ha='right', va='top',zorder=100)
+   ax.grid(True)
 
    # Colorbar
    cbar = fig.colorbar(C, cax=ax1, orientation="horizontal")
