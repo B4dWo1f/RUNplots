@@ -50,7 +50,7 @@ ut.check_directory(data_folder,False)
 zooms = common.get_zooms('zooms.ini',domain=domain)
 
 # Read data
-A = common.CalcData(fname, plots_folder, data_folder)
+A = common.CalcData(fname, plots_folder, data_folder, save_data=False)
 
 # Plots for web
 A.plot_background(force=False,zooms=zooms)

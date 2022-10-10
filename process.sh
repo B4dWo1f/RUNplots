@@ -24,19 +24,18 @@ export RUN_BY_CRON=True
 
 while [ ! -f $RUN_DIR/STOP ]
 do
-   for file in `ls ${FOLDER}/wrfout_d01* 2> /dev/null`
+   for file1 in `ls ${FOLDER}/wrfout_d01* 2> /dev/null`
    do
       sleep 30   # wait in case the files are being written
       echo "Processing The following files:"
-      file1=`echo $file | sed 's/d01/d02/'`
-      ls $file
+      file2=`echo $file1 | sed 's/d01/d02/'`
       ls $file1
+      ls $file2
       date
-      time (python3 web_plots.py $file & python3 web_plots.py $file1)
+      time (python3 web_plots.py $file1 & python3 web_plots.py $file2)
       date
-      mv $file ${FOLDER}/processed/
       mv $file1 ${FOLDER}/processed/
+      mv $file2 ${FOLDER}/processed/
    done
    # echo "No more files"
-   sleep 10  #XXX unnecessary?
 done

@@ -67,12 +67,36 @@ def get_outfolder(fname):
    return wrfout_folder, plots_folder
 
 
-def maskPot0(M, terrain,bldepth):
+def time_sequence(func):
+   """
+   This decorator
+   """
+   def wrapper(*args):
+      LG.info(f'Caculating {func.__name__} time sequence')
+      condition = []
+      for M in args:
+         condition.append( len(M.shape)>2 )
+      temporal_dimension = all(condition)
+      if temporal_dimension:
+         LG.info(f'Caculating {func.__name__} WITH temporal dimension')
+         aux = [] #0. * args[-1]  #XXX an error is bound to happen here
+         for i in range(args[0].shape[0]):
+            aux.append( func(*[M[i] for M in args]) )
+         return np.stack(aux)
+      else:
+         LG.info(f'Caculating {func.__name__} WITHOUT temporal dimension')
+         return func(*args)
+   return wrapper
+
+
+
+@time_sequence
+def maskPot0(M, terrain,bldepth,nan=-9999):
    """
    input: arrays
    """
-   Mdif = terrain+bldepth - M
-   null = 0. * M
+   Mdif = terrain + bldepth - M
+   null = 0. * M + nan
    return np.where( Mdif>0, M, null )
 
 
@@ -100,8 +124,21 @@ def calc_wblmaxmin(linfo, wa, heights, terrain, bldepth):
                                             bldepth.transpose())
    return wblmaxmin.transpose()
 
+
+@time_sequence
 def calc_wstar( hfx, bldepth ):
-   return drjack_num.calc_wstar( hfx.transpose(), bldepth.transpose() ).transpose()
+   wstar = drjack_num.calc_wstar(hfx.transpose(),bldepth.transpose())
+   return wstar.transpose()
+
+
+@time_sequence
+def calc_hcrit( wstar, terrain, bldepth):
+   LG.info('Calculating hcrit')
+   hcrit_function = drjack_num.calc_hcrit
+   hcrit = hcrit_function( wstar.transpose(), terrain.transpose(),
+                           bldepth.transpose() ).transpose()
+   return hcrit
+
 
 def calc_blcloudbase( qcloud,  heights, terrain, bldepth, cwbasecriteria,
                                                        maxcwbasem, laglcwbase):
@@ -112,11 +149,8 @@ def calc_blcloudbase( qcloud,  heights, terrain, bldepth, cwbasecriteria,
                                        cwbasecriteria, maxcwbasem, laglcwbase)
    return blcwbase.transpose()
 
-def calc_hcrit( wstar, terrain, bldepth):
-   hcrit = drjack_num.calc_hcrit( wstar.transpose(), terrain.transpose(),
-                              bldepth.transpose() )
-   return hcrit.transpose()
 
+@time_sequence
 def calc_blclheight(qvapor,heights,terrain,bldepth,pmb,tc):
    qvapor = qvapor.transpose()
    heights = heights.transpose()
@@ -128,17 +162,20 @@ def calc_blclheight(qvapor,heights,terrain,bldepth,pmb,tc):
    # pmb=var = 0.01*(p.values+pb.values) # press is vertical coordinate in mb
    zblcl = drjack_num.calc_blclheight( pmb, tc, qvaporblavg, heights, terrain,
                                    bldepth )
+   zblcl = maskPot0(zblcl, terrain,bldepth)
    return zblcl.transpose()
 
 
+@time_sequence
 def calc_sfclclheight( pressure, tc, td, heights, terrain, bldepth):
    # Cu Cloudbase ~I~where Cu Potential > 0~P~
    zsfclcl = drjack_num.calc_sfclclheight( pressure.transpose(),
                                        tc.transpose(), td.transpose(),
                                        heights.transpose(),
                                        terrain.transpose(),
-                                       bldepth.transpose() )
-   return zsfclcl.transpose()
+                                       bldepth.transpose() ).transpose()
+   zsfclcl = maskPot0(zsfclcl, terrain,bldepth)
+   return zsfclcl
 
 def calc_blavg(X, heights,terrain,bldepth):
    Xblavgwind = drjack_num.calc_blavg(X.transpose(), heights.transpose(),

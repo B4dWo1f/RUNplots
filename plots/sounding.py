@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: UTF-8 -*-
 
+import datetime as dt
 import os
 here = os.path.dirname(os.path.realpath(__file__))
 import log_help
@@ -391,10 +392,12 @@ def skewt_plot(p,tc,tdc,t0,td0,date,u,v,gnd,cu_base_p,cu_base_m,cu_base_t,ps0,ov
    skew_top.ax.set_ylabel('Altitude (m)')
  
    if len(latlon) > 0:
-      skew_top.ax.text(0,1, latlon, va='top', ha='left', color='k',
-                     fontsize=12, bbox=dict(boxstyle="round",
-                                            ec=None, fc=(1., 1., 1., 0.9)),
-                     zorder=100, transform=skew_top.ax.transAxes)
+      skew_top.ax.text(0, 1,
+                latlon+f"\nplot: {dt.datetime.now().strftime('%d/%m-%H:%M')}",
+                va='top', ha='left', color='k',
+                fontsize=12, bbox=dict(boxstyle="round",
+                                       ec=None, fc=(1., 1., 1., 0.9)),
+                zorder=100, transform=skew_top.ax.transAxes)
    if len(title) == 0:
       title = f"{(date).strftime('%d/%m/%Y-%H:%M')} (local time)"
    skew_top.ax.set_title(title)

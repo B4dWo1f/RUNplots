@@ -192,7 +192,10 @@ def find_cross(profile,tc,p,Ninterp=500):
 def get_cloud_base(parcel_profile,p,tc,lcl_p=None,lcl_t=None):
    """
    requires and keeps pint.units
+   returns the crossing of the parcel profile with the Tc
    """
+   #XXX when I made this function, only god and me understood how it worked
+   # now only god knows
    LG.debug('Find cloud base')
    # Plot cloud base
    p_base, t_base = find_cross(parcel_profile, tc, p)
@@ -304,8 +307,9 @@ def drjacks_vars(u,v,w, hfx, pressure,heights, terrain, bldepth,tc, td,qvapor):
    hcrit = ut.calc_hcrit(wstar, terrain, bldepth)
    zsfclcl = ut.calc_sfclclheight(pressure, tc, td, heights, terrain, bldepth)
    zblcl = ut.calc_blclheight(qvapor,heights,terrain,bldepth,pressure,tc)
-   hglider = np.minimum(np.minimum(hcrit,zsfclcl), zblcl)
-   hglider = np.maximum(hglider,terrain)
+   hglider = np.maximum(np.minimum(zblcl, zsfclcl), hcrit)
+   # hglider = np.minimum(np.minimum(hcrit,zsfclcl), zblcl)
+   # hglider = np.maximum(hglider,terrain)
 
    # Pot > 0
    zsfclcl = ut.maskPot0(zsfclcl, terrain,bldepth)
