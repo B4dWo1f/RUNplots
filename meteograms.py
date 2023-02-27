@@ -318,8 +318,10 @@ for iplace in range(len(Points)):
       y -= 20  # to align the box
       ax.text(x-.25,y,t, ha='right',va='top',rotation='vertical',backgroundcolor=(1,1,1,.5),zorder=2)
    # Clouds
-   ax.bar(hours_row, 9000, bottom=overcast[:,i,j], width=1, color=(.3,.3,.3,.7), zorder=4)
-   ax.bar(hours_row, 9000, bottom=cumulus[:,i,j], width=.7, hatch='O', color=(.3,.2,.2,.7), zorder=4)
+   ax.bar(hours_row, 9000, bottom=overcast[:,i,j], width=1, color=(.3,.3,.3,.7),
+          align='center', zorder=4)
+   ax.bar(hours_row, 9000, bottom=cumulus[:,i,j], width=.7, hatch='O',
+          color=(.3,.2,.2,.7), align='center', zorder=4)
    # Windbarbs
    hourss = duplicate_first_row(hours)
    ax.barbs(hours, heights[:,:,i,j].transpose(),
@@ -346,7 +348,8 @@ for iplace in range(len(Points)):
    ymax = np.max([np.max(BL[:,i,j]),
                   np.max(hglider[:,i,j]),
                   np.max(cumulus[:,i,j]),
-                  np.max(overcast[:,i,j]) ]) +500
+                  np.max(overcast[:,i,j]),
+                  2000]) +500
    # ax.set_ylim([GND-100, np.max()+500])
    ax.set_ylim([ymin, ymax])
    ax.yaxis.set_major_locator(MultipleLocator(500))

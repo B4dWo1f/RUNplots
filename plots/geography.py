@@ -231,7 +231,7 @@ def scalar_plot(fig,ax,orto, lons,lats,prop, delta,vmin,vmax,cmap,
    try: cmap = mycolormaps[cmap]
    except KeyError: pass
    try:
-      C = ax.contourf(lons,lats,prop, levels=levels, extend='max',
+      C = ax.contourf(lons,lats,prop, levels=levels, extend='both',
                                       antialiased=True, norm=norm,
                                       cmap=cmap, vmin=vmin, vmax=vmax,
                                       zorder=10, transform=orto)

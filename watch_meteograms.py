@@ -25,7 +25,7 @@ LG.info(f'Starting: {__file__}')
 
 
 def check_files(fol):
-    return os.popen(f'ls -l {fol}/wrfout_d02_*_20*').read().strip().splitlines()
+    return os.popen(f'ls -l {fol}/wrfout_d02_*_18*').read().strip().splitlines()
 
 
 fol = '/storage/WRFOUT/Spain6_1/processed'
@@ -55,3 +55,4 @@ while not os.path.isfile('STOP_meteograms'):
       os.system(com)
    files = files_new
 
+LG.info('Exiting watch_meteograms.py. Bye!')
