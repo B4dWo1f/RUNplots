@@ -25,7 +25,8 @@ LG.info(f'Starting: {__file__}')
 
 
 def check_files(fol):
-    return os.popen(f'ls -l {fol}/wrfout_d02_*_19*').read().strip().splitlines()
+    return os.popen(f'ls -l {fol}/wrfout_d02_*_20*').read().strip().splitlines()
+    # return os.popen(f'ls -l {fol}/wrfout_d02_*_19*').read().strip().splitlines()
 
 
 fol = '/storage/WRFOUT/Spain6_1/processed'

@@ -219,6 +219,7 @@ for dom in ['d02', 'd01']:
    hours = np.stack([hours_row for _ in range(wspd.shape[1])])
    LG.debug(f'Time reading: {time()-told}')
    
+   LG.debug(f'UTCshift: {UTCshift}')
    LG.debug(f'hfx: {HFX.values.shape}')
    LG.debug(f'BL: {BL.values.shape}')
    LG.debug(f'heights: {heights.values.shape}')
