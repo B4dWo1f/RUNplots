@@ -1,0 +1,42 @@
+#!/bin/bash
+RUN_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
+# Prevent concurrent executions with a lock
+LOCKFILE="/tmp/wrfout_wrapper.lock"
+exec 200>"$LOCKFILE"
+flock -n 200 || {
+    echo "$(date): Another instance is already running. Exiting." >> /tmp/wrfout_wrapper.log
+    exit 1
+}
+
+
+# Setup paths
+WPS_DOMAIN="Spain6_1"
+WRFOUT_DIR="$HOME/Documents/storage/WRFOUT/$WPS_DOMAIN"
+PROCESSED_DIR="$WRFOUT_DIR/processed"
+MAIN_SCRIPT="$RUN_DIR/main.py"
+
+# Create processed folder if it doesn't exist
+mkdir -p "$PROCESSED_DIR"
+
+echo "$(date): wrfout_watcher.sh started"
+while true
+do
+   for file1 in `ls ${WRFOUT_DIR}/wrfout_d01* 2> /dev/null`
+   do
+      sleep 10   # wait in case the files are being written
+      echo "Processing The following files:"
+      file2=`echo $file1 | sed 's/d01/d02/'`
+      ls $file1
+      ls $file2
+      date
+      # time (python3 "$MAIN_SCRIPT" $file1 & python3 "$MAIN_SCRIPT" $file2)
+      time ((python3 "$MAIN_SCRIPT" $file1 || echo "$(date): Failed to process $file1" >> /tmp/wrfout_wrapper.err) & (python3 "$MAIN_SCRIPT" $file2 || echo "$(date): Failed to process $file2" >> /tmp/wrfout_wrapper.err) )
+      date
+      mv $file1 ${PROCESSED_DIR}
+      mv $file2 ${PROCESSED_DIR}
+   done
+   # echo "No more files"
+   sleep 5
+done
+echo "$(date): wrfout_watcher.sh finished"

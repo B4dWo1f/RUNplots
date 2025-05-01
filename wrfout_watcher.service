@@ -1,0 +1,13 @@
+[Unit]
+Description=Persistent WRFOUT Processor Watcher
+
+[Service]
+Type=simple
+ExecStart=%h/CODES/RUN_plots/wrfout_watcher.sh
+Restart=always
+RestartSec=5
+StandardOutput=append:%h/CODES/RUN_plots/wrfout_watcher.log
+StandardError=append:%h/CODES/RUN_plots/wrfout_watcher.err
+
+[Install]
+WantedBy=default.target
