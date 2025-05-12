@@ -3,121 +3,337 @@
 
 import os
 here = os.path.dirname(os.path.realpath(__file__))
-import log_help
+HOME = os.getenv('HOME')
+STYLE_PATH = os.path.join(here, "styles", "RASP.mplstyle")
+
 import logging
 LG = logging.getLogger(__name__)
+LG.setLevel(logging.DEBUG)
 
-## True unless RUN_BY_CRON is not defined
-is_cron = bool( os.getenv('RUN_BY_CRON') )
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-plt.style.use(f'./meteogram.mplstyle')
-
-import numpy as np
-from matplotlib.patches import Rectangle
-from matplotlib.ticker import MultipleLocator,ScalarFormatter
+import sys
 from . import colormaps as mcmaps
+from datetime import timedelta
+import matplotlib.pyplot as plt
+plt.style.use(STYLE_PATH)
+import matplotlib as mpl
+mpl.use('Agg')
+from matplotlib.patches import Rectangle
+import matplotlib.dates as mdates
+import numpy as np
+import xarray as xr
+from metpy.units import units
+import metpy.calc as mpcalc
+import derived_quantities as dq
 
-def meteogram(GND,hours,X,heights,BL,Hcrit,Zover,Zcu,S,U,V,PCT_low,PCT_mid,PCT_high,title='',fout='meteogram.png'):
+# helper shortcuts
+p2m = mpcalc.pressure_to_height_std
+m2p = mpcalc.height_to_pressure_std
+
+
+def pad_array(arr):
    """
-   hours: only plot hours[1:-1]. hours[0] is GFS-smothen. hours[-1] is a
-          duplicate of hours[-2]
-   X: X grid (vertical repetitions of hours)
-   heights: Y grid
+   Pad data arrays: replicate first and last rows
    """
-   print('*********')
-   print(heights.shape)
-   print(Zover)
-   print(Zcu)
-   print('*********')
-   exit()
-   log = True
-   ## Plot
-   gs_plots = plt.GridSpec(3, 1, height_ratios=[2,17,1],hspace=0.,top=0.95,
-                                                        right=0.95,bottom=0.05)
-   gs_cbar  = plt.GridSpec(3, 1, height_ratios=[2,17,1],hspace=0.5,top=0.95,
-                                                        right=0.95, bottom=0)
-   fig = plt.figure()
-   # fig.subplots_adjust() #hspace=[0,0.2])
-   ax =  fig.add_subplot(gs_plots[1,:])   # meteogram
+   first = arr[0:1, :]
+   last  = arr[-1:, :]
+   return np.concatenate([first, arr, last], axis=0)
+
+def get_bar_width(m):
+   """
+   Xaxis is in numpy datetime, this function converts minutes to width
+   of the bar plots
+   """
+   return timedelta(minutes=m).total_seconds() / (24 * 3600)
+
+
+
+def plot_meteogram(fname,fout='meteogram.png'):
+   """
+   Input: fname is the path to an xrarray created by meteogram_writer.py which
+          populates the ncfile as new wrfout files become avialable
+   Layout:
+                     __________________
+                    |                  |  low/mid/high frac   
+           [ax0]--> |                  | <-- Cloud %
+                    |__________________|
+                    |                  |
+                    |                  |
+                    |                  |
+                    |                  |
+           [ax ]--> |     METEOGRAM    |
+                    |                  |
+                    |                  |
+                    |                  |
+                    |__________________|
+           [ax1]-->  ##################  <-- cbar
+
+   Required properties (leys) in input ncfile:
+     - time: [datetime?] Forecast time
+     - terrain_height: [m] Terrain height 
+     - heights: [m] Height of vertical levels in the model
+     - hglider: [m] Max Height for a paraglider max(min(zblcl, zsfclcl), hcrit)
+     - rain: [mm] 1h rain
+     - low_cloudfrac: [%] Fraction of low clouds
+     - mid_cloudfrac: [%] Fraction of mid clouds
+     - high_cloudfrac: [%] Fraction of high clouds
+     - zsfclcl: [m] Slightly obsolete, soon it will not be necessary
+     - zblcl: [m] Slightly obsolete, soon it will not be necessary
+     - umet10: [m/s] U component of 10m earth-rotated wind
+     - vmet10: [m/s] V component of 10m earth-rotated wind
+     - wspd: [m/s] Module of windfor all vert levels
+     - umet: [m/s] U component of earth-rotated wind for all vert levels
+     - vmet: [m/s] V component of earth-rotated wind for all vert levels
+     - p: [hPa] Full pressure for all vert levels
+     - tc: [°C] Temperature for all vert levels
+     - rh: [%] Relative humidity
+     - t0: [K] T2m
+     - td0: [°C] TD2m
+
+   Layers order
+   ---------------------------------
+   | zorder  |      quantity       |
+   ---------------------------------
+   |    0    |   wspd (contourf)   |
+   |    1    |  thermals (hglier)  |
+   |    2    | wind height (uvmet) |
+   |    3    |       zsfclcl       |
+   |    4    |        zblcl        |
+   |    5    |        rain         |
+   |    6    |       ground        |
+   |    7    | wind 10m (uvmet10)  |
+   ---------------------------------
+   """
+   ############################ READ & PROCESS DATA #############################
+   # Load dataset
+   try: ds = xr.open_dataset(fname)
+   except FileNotFoundError:
+      print(f'Error in meteogram.py. File {fname} does not exist')
+      sys.exit(1)
+
+   #                                       #
+   #   Import and make MetPy units aware   #
+   #                                       #
+   ## Extract
+   hours   = ds["time"].values
+   terrain = ds["terrain_height"].values
+   heights = ds["heights"].values       # shape: (n_time, n_level)
+   hglider = ds["hglider"].values       # shape: (n_time, n_level)
+   rain = ds["rain"].values       # shape: (n_time, n_level)
+   low_cloudfrac = ds["low_cloudfrac"].values       # shape: (n_time, n_level)
+   mid_cloudfrac = ds["mid_cloudfrac"].values       # shape: (n_time, n_level)
+   high_cloudfrac = ds["high_cloudfrac"].values       # shape: (n_time, n_level)
+   zsfclcl = ds["zsfclcl"].values       # shape: (n_time, n_level)
+   zblcl   = ds["zblcl"].values       # shape: (n_time, n_level)
+   umet10  = ds["umet10"].values       # shape: (n_time, n_level)
+   vmet10  = ds["vmet10"].values       # shape: (n_time, n_level)
+   wspd    = ds["wspd"].values          # shape: (n_time, n_level)
+   umet    = ds["umet"].values
+   vmet    = ds["vmet"].values
+   p       = ds['p'].values
+   tc      = ds['tc'].values
+   rh      = ds['rh'] / 100
+   t0      = ds["t0"].values
+   td0     = ds["td0"].values
+   GND = terrain[0] + 15  # cheap fix for the gap between the terrain and the
+                          # 1st vertical layer in the model
+   ## MetPy units
+   p       = p    * units('hPa')
+   tc      = tc   * units('degC')
+   t0      = t0   * units('K')
+   td0     = td0  * units('degC')
+   wspd    = wspd * units('m s-1')
+   umet    = umet * units('m s-1')
+   vmet    = vmet * units('m s-1')
+   ## Conversions
+   t0c  = t0.to('degC')
+   wspd = wspd.to('km h-1') 
+   umet = umet.to('km h-1') 
+   vmet = vmet.to('km h-1') 
+   ########################################
+
+
+   # Pad frist and last hour for smooth edges
+   # Convert times to pandas for easier manipulation
+   times = ds["time"].values
+   dt = np.diff(times).astype("timedelta64[m]").astype(int)
+   try: mean_dt = int(np.median(dt))  # assume uniform spacing
+   except ValueError:
+      LG.critical('Not enough data for a meteogram')
+      sys.exit(1)
+
+   #################################### PLOT ####################################
+   # Setup the Figure layout
+   hr = [2,18,.5]
+   l = .08
+   r = .98
+   t = .97
+   gs_plots = plt.GridSpec(3, 1, height_ratios=hr,hspace=0.,
+                                 top=t, left=l, right=r, bottom=0.0675)
+   gs_cbar  = plt.GridSpec(3, 1, height_ratios=hr,hspace=0.5,
+                                 top=t, left=l, right=r, bottom=0.04)
+   fig = plt.figure(figsize=(11, 13))
+   # Define the axis
+   ax =  fig.add_subplot(gs_plots[1,:])             # meteogram
    ax0 = fig.add_subplot(gs_plots[0,:], sharex=ax)  # clouds
-   ax1 = fig.add_subplot(gs_cbar[2,:])  # colorbar
-   if log: ax.set_yscale('log')
+   ax1 = fig.add_subplot(gs_cbar[2,:])              # colorbar
 
-   ## % of low-mid-high-clouds
-   img_cloud_pct = np.vstack((PCT_low,PCT_mid,PCT_high))
-   Xcloud = np.array([hours for _ in range(img_cloud_pct.shape[0])])
-   Ycloud = 0*Xcloud.transpose() + np.array(range(img_cloud_pct.shape[0]))
-   Ycloud = Ycloud.transpose()
-   ax0.contourf(Xcloud,Ycloud,img_cloud_pct, origin='lower',
-                                             cmap='Greys', vmin=0, vmax=1)
-   ax0.set_yticks(range(img_cloud_pct.shape[0]))
+
+   bbox_barbs = dict(spacing=0.2, emptybarb=0.2, width=0.5, height=0.5)
+   thermal_color = np.array([255,127,0])/255
+   rain_color = np.array([154,224,228])/255
+   terrain_color = np.array([158,65,12])/255
+
+
+   ########### Central plot. Meteogram
+   # LAYER 0. wspd contourf with padded time and transposed wspd
+   # Create padding
+   # Create two new times: one before, one after
+   t_before = times[0] - np.timedelta64(mean_dt, 'm')
+   t_after  = times[-1] + np.timedelta64(mean_dt, 'm')
+
+   # Pad time axis
+   times_padded = np.concatenate([[t_before], times, [t_after]])
+
+   wspd_padded = pad_array(wspd)
+   heights_padded = pad_array(heights)
+   umet_padded = pad_array(umet)
+   vmet_padded = pad_array(vmet)
+
+   cf = ax.contourf(times_padded, np.mean(heights_padded, axis=0), wspd_padded.T,
+                    levels=range(0,60,4), vmin=0, vmax=60,
+                    cmap=mcmaps.WindSpeed, extend='max',zorder=0,alpha=.7)
+   # Colorbar
+   ax1.grid(False)
+   cbar = fig.colorbar(cf, cax=ax1, orientation="horizontal")
+   cbar.set_label('km/h')
+
+
+   # LAYER 1. Thermals
+   bar_width = get_bar_width(25)
+   ax.bar(hours, hglider, width=bar_width, color=thermal_color, zorder=1)
+
+
+   # LAYER 2. Wind vertical profile
+   # Plot padded barbs
+   times_flat = np.repeat(times_padded, heights_padded.shape[1])
+   heights_flat = heights_padded.flatten()
+   umet_flat = umet_padded.flatten()
+   vmet_flat = vmet_padded.flatten()
+   ax.barbs(times_flat, heights_flat, umet_flat, vmet_flat,
+            length=5, sizes=bbox_barbs, zorder=2, color='black')
+
+
+   # LAYER 3. zsfclcl clouds
+   #
+   # Calculate pacel profile
+   #
+   bases, tops = [],[]
+   for x,y,z,q in zip(p, t0c, td0,tc):
+      parcel = mpcalc.parcel_profile(x, y, z)
+      parcel = parcel.to('degC')
+      lcl_p, lcl_t = mpcalc.lcl(x[0], y, z)
+      lcl_t = lcl_t.to('degC')
+      base, top = dq.get_cumulus_base_top(x,q,parcel,lcl_p, lcl_t)
+      cu_base_p, _ = base
+      cu_top_p, _ = top
+      if cu_base_p is None:
+         bases.append(-999*units('m'))
+         tops.append( -998*units('m'))
+      else:
+         bases.append(p2m(cu_base_p).to('m'))
+         tops.append(p2m(cu_top_p).to('m'))
+   ax.bar(hours, tops, bottom=bases, width=get_bar_width(40),
+                       hatch='O', color=(.3,.2,.2,.7), zorder=4)
+   # XXX Let's make zsfclcl Obsolete!
+   # ax.bar(hours, 9000, bottom=zsfclcl, width=get_bar_width(40),
+   #                     hatch='O', color=(.3,.2,.2,.7), zorder=4)
+
+   # LAYER 4. zblcl clouds
+   bar_width = get_bar_width(60)
+   # TODO Vectorize this, for the love of god!!
+   overcast = []
+   for x,y in zip(p, rh):
+      overcast.append( dq.get_overcast(y) )
+   overcast = np.array(overcast)
+   # Pad the clouds for smooth edges
+   overcast_padded = pad_array(overcast)
+   ocf = ax.contourf(times_padded, np.mean(heights_padded, axis=0), 
+                     overcast_padded.T, cmap=mcmaps.greys, vmin=0, vmax=1)
+   # XXX Let's make zblcl Obsolete!
+   # ax.bar(hours, 9000, bottom=zblcl, width=get_bar_width(60),
+   #                     color=(.3,.3,.3,.7), zorder=4)
+
+
+   # LAYER 5. Rain
+   if any(rain > .5):
+      rain_scale = 100
+      bar_width = get_bar_width(15)
+      ax.bar(hours, terrain+rain*rain_scale, width=get_bar_width(15),
+                                         color=rain_color, zorder=99)
+      # rain 1mm scale
+      ax.bar(hours[0], terrain+rain_scale, width=get_bar_width(15),
+                                       color='none', edgecolor='black', zorder=99)
+      ax.text(hours[0]-np.timedelta64(22, 'm'), GND+rain_scale, '1mm',
+              rotation='vertical', ha='left', va='top')
+
+
+   # LAYER 6. Ground
+   x_min, x_max = ax.get_xlim()
+   ground_bottom = terrain[0]-200
+   ground_rect = Rectangle((x_min, ground_bottom),   # (x, y) of lower-left
+                           x_max - x_min,            # width
+                           GND - ground_bottom,      # height
+                           color='saddlebrown', zorder=99)
+   ax.add_patch(ground_rect)
+
+
+   # LAYER 7. Wind 10m above ground
+   ax.barbs(hours, terrain, umet10, vmet10,
+            length=6,sizes=bbox_barbs, color='r', lw=3,zorder=100)
+
+
+   # Y-label
+   ax.set_ylabel("Height (m)")
+
+
+   # Plot settings
+   ax.set_xlim(times[0] - np.timedelta64(20, 'm'),
+               times[-1] + np.timedelta64(20, 'm'))
+   ymin = terrain[0]-100
+   ymax = np.max([ np.max(hglider),
+                   np.max(zsfclcl),
+                   np.max(zblcl) ]) +500
+   ymax = 3000
+   ax.set_ylim(ymin,ymax)
+   ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
+   ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
+
+
+   ########### Upper plot. Cloud fraction
+   # Cloud fraction
+   aux = [high_cloudfrac, mid_cloudfrac, low_cloudfrac]
+   img_cloud_pct = np.stack(aux, axis=1)
+   img_cloud_pct = img_cloud_pct.transpose()
+
+   # Plot the cloud fraction
+   ax0.imshow(img_cloud_pct, cmap='Greys',vmin=0,vmax=1, 
+              extent=[x_min,x_max,0,2], aspect='auto')
+
+   # # Clouds plot
+   ax0.set_yticks([1/3,1,5/3])
    ax0.set_yticklabels(['low','mid','high'])
-   ax0.set_ylim(0,2)
    plt.setp(ax0.get_xticklabels(), visible=False)
-   ax0.grid(False)
-   ## Plot Background Wind Speeds
-   C = ax.contourf(X, heights, S, levels=range(0,60,4),
-                                  vmin=0, vmax=60, cmap=mcmaps.WindSpeed,
-                                  extend='max',zorder=9)
-   ## alpha workaround
-   # rect = Rectangle((-1,-1),24,1e4,facecolor='white',zorder=10,alpha=0.5)
-   # ax.add_patch(rect)
+   ax0.set_ylabel('Cloud %')
+   ax0.set_title(f'Arcones') #'{titles[iplace].capitalize()} {target_date}')
 
-   ## Colorbar
-   cbar = fig.colorbar(C, cax=ax1, orientation="horizontal")
 
-   ## Plot BL and Thermals
-   thermal_color = np.array([255,127,0])/255 # (0.96862745,0.50980392,0.23921569)
-   BL_color      = np.array([255,205,142])/255 # (0.90196078,1., 0.50196078)
-   # thermal_color = (0.96862745,0.50980392,0.23921569)
-   # BL_color      = (0.90196078,1.,        0.50196078)
-   W = 0.6
-   ax.bar(hours,BL+GND,width=W, color=BL_color, ec=thermal_color,zorder=20)
-   ax.bar(hours,Hcrit-GND, width=W-0.15, bottom=GND,
-                           color=thermal_color,zorder=21)
-   ## Clouds
-   ax.bar(hours,Zover+100, bottom=Zover, width=1, color=(.4,.4,.4),
-                                                           zorder=21, alpha=0.8)
-   # ax.bar(hours,Zcu+100,bottom=Zcu,width=W+0.15, color=(.3,.3,.3), hatch='O', 
-   cu_top = np.where(Zcu>0,BL+GND-Zcu,-100)
-   ax.bar(hours,cu_top, bottom=Zcu, width=W+.2,color=(.3,.3,.3),hatch='O', 
-                                                           zorder=22, alpha=0.8)
-   # overcast_top = np.where(BL+GND > Zover,BL+GND-Zover,1000)
-   # ax.bar(hours,overcast_top, bottom=Zover, width=0.9, color=(.4,.4,.4),
-   #                                                       zorder=21, alpha=0.75)
-   # cu_top = np.where(BL+GND > Zcu,BL+GND-Zcu,Zcu+100)
-   # ax.bar(hours,cu_top, bottom=Zcu, width=W+0.15, color=(.3,.3,.3), hatch='O', 
-   #                                                       zorder=22, alpha=0.75)
-   ## Plot Wind barbs
-   bbox_barbs = dict(spacing=.2,emptybarb=.075, width=.1, height=.3)
-   ax.barbs(X,heights,U,V,length=5,sizes=bbox_barbs,zorder=30)
-   ## Plot Terrain Ground
-   terrain_color = (0.78235294, 0.37058824, 0.11568627)
-   rect = Rectangle((0,0), 24, GND, facecolor=terrain_color, zorder=29)
-   ax.add_patch(rect)
-   ax.text(0, 0, f'GND: {GND:.0f}', va='bottom', zorder=100,
-                                       transform=ax.transAxes, fontsize=10)
+### SAVE ######################################################################
+   LG.info('saving')
+   fig.savefig(fout, bbox_inches='tight', pad_inches=0.1, dpi=150)
+   LG.info(f'saved {fout}')
+   plt.close('all')
 
-   ## Title
-   if len(title) > 0: ax0.set_title(title)
 
-   ## Axis setup
-   # X lim
-   ax.set_xlim(hours[1]-0.5, hours[-2]+0.5)
-   ax.set_xticks(hours[1:-1])
-   ax.set_xticklabels([f'{x}:00' for x in hours[1:-1]])
-   # Y lim
-   ymin = GND-75
-   ymax = np.max(BL)+GND+200
-   ax.set_ylim([ymin, ymax])
-   ax.yaxis.set_major_locator(MultipleLocator(500))
-   ax.yaxis.set_minor_locator(MultipleLocator(100))
-   ax.yaxis.set_major_formatter(ScalarFormatter())
-   ax.yaxis.set_minor_formatter(ScalarFormatter())
-   ax.set_ylabel('Height (m)')
-   # Grid
-   ax.grid(False)
-
-   # fig.tight_layout()
-   fig.savefig(fout,bbox_inches='tight')
+if __name__ == '__main__':
+   fname = "meteogram_41.1_-3.6.nc"
+   plot_meteogram(fname)

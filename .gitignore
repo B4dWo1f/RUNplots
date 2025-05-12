@@ -9,3 +9,4 @@ STOP
 plots.ini
 **.out
 zooms.ini
+.venv3.10/

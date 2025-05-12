@@ -1,0 +1,18 @@
+# Build support for legacy packages
+wheel
+# UI backend
+pyqt5
+# Pin versions known to work with metpy
+numpy==1.26.4
+matplotlib==3.8.4
+
+# Core scientific stack
+scipy
+xarray
+netCDF4
+rasterio
+
+# Legacy and geoscience tools
+cartopy
+metpy
+wrf-python
