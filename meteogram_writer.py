@@ -1,77 +1,74 @@
 #!/usr/bin/python3
 # -*- coding: UTF-8 -*-
 
+import log_help
+import logging
+LG = logging.getLogger(f'main.{__name__}')
+LGp = logging.getLogger(f'perform.{__name__}')
+
 import warnings
 warnings.filterwarnings("ignore", message="Converting non-nanosecond precision datetime values to nanosecond precision")
 
-
 import numpy as np
-# import datetime as dt
-# from netCDF4 import Dataset
 import wrf
-# import myutil as ut
-# import mydrjack as drj
-# # import mydrjack_num
 import os
 here = os.path.dirname(os.path.realpath(__file__))
 HOME = os.getenv('HOME')
-# from pathlib import Path
-# fmt = '%d/%m/%Y-%H:%M'
 import xarray as xr
 
-def make_meteogram_timestep(calcdata,lat,lon):
+@log_help.timer(LG, LGp)
+def make_meteogram_timestep(WRF,lat,lon):
    # 1D vars
-   umet10, vmet10 = calcdata.wrf_vars["uvmet10"]  # [y, x]
-   umet10_pt = extract_point_profile(umet10, lat, lon, calcdata)
-   vmet10_pt = extract_point_profile(vmet10, lat, lon, calcdata)
+   umet10, vmet10 = WRF.wrf_vars["uvmet10"]  # [y, x]
+   umet10_pt = vertical_profile(umet10, lat, lon, WRF)
+   vmet10_pt = vertical_profile(vmet10, lat, lon, WRF)
 
-   wspd10, wdir10 = calcdata.wrf_vars["wspd_wdir10"]  # [y, x]
-   wspd10_pt = extract_point_profile(wspd10, lat, lon, calcdata)
-   wdir10_pt = extract_point_profile(wdir10, lat, lon, calcdata)
+   wspd10 = WRF.wrf_vars["wspd10"]  # [y, x]
+   wspd10_pt = vertical_profile(wspd10, lat, lon, WRF)
+   # wdir10_pt = vertical_profile(wdir10, lat, lon, WRF)
 
-   t0      = calcdata.wrf_vars['t2m']
-   t0      = extract_point_profile(t0, lat, lon, calcdata)
-   td0     = calcdata.wrf_vars['td2m']
-   td0     = extract_point_profile(td0, lat, lon, calcdata)
+   t0      = WRF.wrf_vars['t2m']
+   t0      = vertical_profile(t0, lat, lon, WRF)
+   td0     = WRF.wrf_vars['td2m']
+   td0     = vertical_profile(td0, lat, lon, WRF)
    # Rain
-   rain = calcdata.wrf_vars["rain"]
-   rain_pt = extract_point_profile(rain, lat, lon, calcdata)
+   rain = WRF.wrf_vars["rain"]
+   rain_pt = vertical_profile(rain, lat, lon, WRF)
    # Clouds
    # low
-   low_cloudfrac = calcdata.wrf_vars["low_cloudfrac"]
-   low_cloudfrac_pt = extract_point_profile(low_cloudfrac, lat, lon, calcdata)
+   low_cloudfrac = WRF.wrf_vars["low_cloudfrac"]
+   low_cloudfrac_pt = vertical_profile(low_cloudfrac, lat, lon, WRF)
    # mid
-   mid_cloudfrac = calcdata.wrf_vars["mid_cloudfrac"]
-   mid_cloudfrac_pt = extract_point_profile(mid_cloudfrac, lat, lon, calcdata)
+   mid_cloudfrac = WRF.wrf_vars["mid_cloudfrac"]
+   mid_cloudfrac_pt = vertical_profile(mid_cloudfrac, lat, lon, WRF)
    # high
-   high_cloudfrac = calcdata.wrf_vars["high_cloudfrac"]
-   high_cloudfrac_pt = extract_point_profile(high_cloudfrac, lat, lon, calcdata)
+   high_cloudfrac = WRF.wrf_vars["high_cloudfrac"]
+   high_cloudfrac_pt = vertical_profile(high_cloudfrac, lat, lon, WRF)
    # Terrain
-   terrain = extract_point_profile(calcdata.wrf_vars["terrain"], lat, lon, calcdata)
+   terrain = vertical_profile(WRF.wrf_vars["terrain"], lat, lon, WRF)
    # DrJack vars (scalars)
-   hglider = extract_point_profile(calcdata.drjack_vars["hglider"], lat, lon, calcdata)
-   zsfclcl = extract_point_profile(calcdata.drjack_vars["zsfclcl"], lat, lon, calcdata)
-   zblcl = extract_point_profile(calcdata.drjack_vars["zblcl"], lat, lon, calcdata)
-   wstar = extract_point_profile(calcdata.drjack_vars["wstar"], lat, lon, calcdata)
+   hglider = vertical_profile(WRF.drjack_vars["hglider"], lat, lon, WRF)
+   zsfclcl = vertical_profile(WRF.drjack_vars["zsfclcl"], lat, lon, WRF)
+   zblcl = vertical_profile(WRF.drjack_vars["zblcl"], lat, lon, WRF)
+   wstar = vertical_profile(WRF.drjack_vars["wstar"], lat, lon, WRF)
 
    # Vertical profile
-   umet, vmet = calcdata.wrf_vars["uvmet"]
-   umet_pt = extract_point_profile(umet, lat, lon, calcdata)
-   vmet_pt = extract_point_profile(vmet, lat, lon, calcdata)
-   tc = extract_point_profile(calcdata.wrf_vars["tc"], lat, lon, calcdata)
+   umet, vmet = WRF.wrf_vars["uvmet"]
+   umet_pt = vertical_profile(umet, lat, lon, WRF)
+   vmet_pt = vertical_profile(vmet, lat, lon, WRF)
+   tc = vertical_profile(WRF.wrf_vars["tc"], lat, lon, WRF)
    tc = np.array(tc)  # Ensure 1D shape
-   rh = extract_point_profile(calcdata.wrf_vars["rh"], lat, lon, calcdata)
+   rh = vertical_profile(WRF.wrf_vars["rh"], lat, lon, WRF)
    rh = np.array(rh)  # Ensure 1D shape
-   p = extract_point_profile(calcdata.wrf_vars["p"], lat, lon, calcdata)
+   p = vertical_profile(WRF.wrf_vars["p"], lat, lon, WRF)
    p = np.array(p)  # Ensure 1D shape
-   heights = extract_point_profile(calcdata.wrf_vars["heights"], lat, lon, calcdata)
+   heights = vertical_profile(WRF.wrf_vars["heights"], lat, lon, WRF)
    heights = np.array(heights)  # Ensure 1D shape
-   timestamp = np.datetime64(calcdata.date).astype('datetime64[m]')
 
    wspd_pt = np.sqrt(umet_pt**2 + vmet_pt**2)
 
    # Time info
-   timestamp = np.datetime64(calcdata.date,'m')  # Or from wrfout filename
+   timestamp = np.datetime64(WRF.meta['valid_time'],'m')
 
    ds = xr.Dataset(
        data_vars={
@@ -83,20 +80,20 @@ def make_meteogram_timestep(calcdata,lat,lon):
            "umet10":             (["time"], [umet10_pt]),
            "vmet10":             (["time"], [vmet10_pt]),
            "wspd10":             (["time"], [wspd10_pt]),
-           "wdir10":             (["time"], [wdir10_pt]),
+           # "wdir10":             (["time"], [wdir10_pt]),
            "t0":                 (["time"], [t0]),
            "td0":                (["time"], [td0]),
            "wstar":              (["time"], [wstar]),
            "hglider":            (["time"], [hglider]),
            "zsfclcl":            (["time"], [zsfclcl]),
            "zblcl":              (["time"], [zblcl]),
-           "p":        (["time", "level"], np.atleast_2d(p)),
-           "tc":       (["time", "level"], np.atleast_2d(tc)),
-           "rh":       (["time", "level"], np.atleast_2d(rh)),
-           "heights":  (["time", "level"], np.atleast_2d(heights)),
-           "umet":     (["time", "level"], np.atleast_2d(umet_pt)),
-           "vmet":     (["time", "level"], np.atleast_2d(vmet_pt)),
-           "wspd":     (["time", "level"], np.atleast_2d(wspd_pt)),
+           "p":         (["time", "level"], np.atleast_2d(p)),
+           "tc":        (["time", "level"], np.atleast_2d(tc)),
+           "rh":        (["time", "level"], np.atleast_2d(rh)),
+           "heights":   (["time", "level"], np.atleast_2d(heights)),
+           "umet":      (["time", "level"], np.atleast_2d(umet_pt)),
+           "vmet":      (["time", "level"], np.atleast_2d(vmet_pt)),
+           "wspd":      (["time", "level"], np.atleast_2d(wspd_pt)),
        },
        coords={
            "time": [timestamp],
@@ -110,17 +107,19 @@ def make_meteogram_timestep(calcdata,lat,lon):
    return ds
 
 
-
-
+@log_help.timer(LG, LGp)
 def append_to_meteogram(ds_new, filepath):
-   """Appends a new timestep to the meteogram netCDF file using safe context management"""
-
+   """
+   Appends a new timestep to the meteogram netCDF file using safe context
+   management
+   """
    # Ensure minute-level time precision for consistency
    ds_new["time"] = ds_new["time"].astype("datetime64[m]")
-
+   units = "minutes since 2007-10-12 00:00:00"
    if not os.path.exists(filepath):
-      encoding = {"time": {"units": "minutes since 2025-04-29 00:00:00", "calendar": "standard"}}
+      encoding = {"time": {"units": units, "calendar": "standard"}}
       ds_new.to_netcdf(filepath, mode='w', encoding=encoding)
+      ds_combined = ds_new
    else:
       with xr.open_dataset(filepath) as ds_existing:
          # Ensure consistent time precision
@@ -137,17 +136,17 @@ def append_to_meteogram(ds_new, filepath):
          ds_combined = xr.concat([ds_existing_filtered, ds_new], dim="time", compat="identical", combine_attrs="override")
          ds_combined = ds_combined.sortby("time")
 
-      encoding = {"time": {"units": "minutes since 2025-04-29 00:00:00", "calendar": "standard"}}
+      encoding = {"time": {"units": units, "calendar": "standard"}}
       ds_combined.to_netcdf(filepath, mode='w', encoding=encoding)
       ds_combined.close()
+   return ds_combined
 
 
 
-def extract_point_profile(var, lat, lon, calcdata):
+def vertical_profile(var, lat, lon, WRF):
    """Interpolates var at given lat/lon from wrf_vars (or drjack_vars)"""
    # Use wrf-python's ll_to_xy, or use nearest neighbor for simplicity
-
-   ncfile = calcdata.ncfile
+   ncfile = WRF.ncfile
    j,i = wrf.ll_to_xy(ncfile, lat, lon)
    i = i.values
    j = j.values

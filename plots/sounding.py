@@ -7,9 +7,11 @@ here = os.path.dirname(os.path.realpath(__file__))
 HOME = os.getenv('HOME')
 STYLE_PATH = os.path.join(here, "styles", "RASP.mplstyle")
 
+import log_help
 import logging
-LG = logging.getLogger(__name__)
-LG.setLevel(logging.DEBUG)
+LG = logging.getLogger(f'main.{__name__}')
+LGp = logging.getLogger(f'perform.{__name__}')
+
 import wrf
 import datetime as dt
 import numpy as np
@@ -27,6 +29,7 @@ from metpy.units import units
 import metpy.calc as mpcalc
 from scipy.interpolate import interp1d
 import derived_quantities as dq
+from . import utils as ut
 
 p2m = mpcalc.pressure_to_height_std
 m2p = mpcalc.height_to_pressure_std
@@ -36,7 +39,7 @@ UTCshift = dt.timedelta(hours = round(UTCshift.total_seconds()/3600))
 
 
 def interpolate_vars(p,tc,tdc,rh,u,v,Ninterp=250):
-   LG.warning(f'Interpolating sounding variables to {Ninterp} levels')
+   LG.debug(f'Interpolating sounding variables to {Ninterp} levels')
    ps = np.linspace(np.max(p),np.min(p), Ninterp)
    ftc = interp1d(p,tc)
    ftdc = interp1d(p,tdc)
@@ -158,10 +161,8 @@ def find_rotation(fig,subplot,t_top_min, t_top_max,p,tc,tdc,parcel,Pmed,Pmin,TDm
 
 
 
-
-
-
-def skew_t_plot(WRF, lat,lon, fout='sounding.png', title='', interpolate=True, rot=30):
+@log_help.timer(LG, LGp)
+def skew_t_plot(WRF, lat,lon, fout='sounding.png', title='', name='', interpolate=True, rot=30):
    """
    Layout             ________________________
                  Pmin|                 |C|Hod |<-- ax_hod
@@ -191,7 +192,8 @@ def skew_t_plot(WRF, lat,lon, fout='sounding.png', title='', interpolate=True, r
          - Vertical Earth-oriented wind u,v [m/s]: WRF.wrf_vars['uvmet']
          - Terrain [m (asl)]: WRF.wrf_vars['terrain']
    fout: [str] filename to save the plot
-   title: [str] optional. If missing, the date is used to generate the title
+   title: [str] optional. Full title to use.
+   name: [str] optional. If provided the title will be: "name d/m/Y-H:M"
    rot: [float] rotation of the Y axis for the main plot (temperature skewness)
    interpolate: [bool] Interpolate vertical levels for smoother graphs. Its
                 main effect is visible in the wind intensity plot
@@ -218,7 +220,7 @@ def skew_t_plot(WRF, lat,lon, fout='sounding.png', title='', interpolate=True, r
    t0      = WRF.wrf_vars['t2m'][i,j]
    td0     = WRF.wrf_vars['td2m'][i,j]
    rh      = WRF.wrf_vars['rh'][:,i,j]
-   date    = WRF.date
+   date    = WRF.meta['valid_time']
    u,v     = WRF.wrf_vars['uvmet']
    u = u[:,i,j]
    v = v[:,i,j]
@@ -451,8 +453,12 @@ def skew_t_plot(WRF, lat,lon, fout='sounding.png', title='', interpolate=True, r
    skew_top.ax.text(0, 1, msg, va='top', ha='left', color='k', fontsize=12,
                     bbox=dict(boxstyle="round", ec=None, fc=(1., 1., 1.,  .9)),
              zorder=100, transform=skew_top.ax.transAxes)
-   if len(title) == 0:
-      title = f"{(date+UTCshift).strftime('%d/%m/%Y-%H:%M')} (local time)"
+   if len(title) > 0:
+      pass
+   else:
+      title = f"{(date+UTCshift).strftime('%d/%m/%Y-%H:%M')}"
+      if len(name) > 0:
+         title = f'{name} {title}'
    skew_top.ax.set_title(title)
 
    # Change the style of the gridlines

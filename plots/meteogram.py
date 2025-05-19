@@ -6,11 +6,13 @@ here = os.path.dirname(os.path.realpath(__file__))
 HOME = os.getenv('HOME')
 STYLE_PATH = os.path.join(here, "styles", "RASP.mplstyle")
 
+import log_help
 import logging
-LG = logging.getLogger(__name__)
-LG.setLevel(logging.DEBUG)
+LG = logging.getLogger(f'main.{__name__}')
+LGp = logging.getLogger(f'perform.{__name__}')
 
 import sys
+import datetime as dt
 from . import colormaps as mcmaps
 from datetime import timedelta
 import matplotlib.pyplot as plt
@@ -46,7 +48,7 @@ def get_bar_width(m):
    return timedelta(minutes=m).total_seconds() / (24 * 3600)
 
 
-
+@log_help.timer(LG, LGp)
 def plot_meteogram(fname,fout='meteogram.png'):
    """
    Input: fname is the path to an xrarray created by meteogram_writer.py which
@@ -145,18 +147,22 @@ def plot_meteogram(fname,fout='meteogram.png'):
    umet    = umet * units('m s-1')
    vmet    = vmet * units('m s-1')
    ## Conversions
-   t0c  = t0.to('degC')
-   wspd = wspd.to('km h-1') 
-   umet = umet.to('km h-1') 
-   vmet = vmet.to('km h-1') 
+   UTCshift = dt.datetime.now() - dt.datetime.utcnow()
+   UTCshift = dt.timedelta(hours = round(UTCshift.total_seconds()/3600))
+   UTCshift = np.timedelta64(UTCshift)
+   hours = hours + UTCshift
+   t0c   = t0.to('degC')
+   wspd  = wspd.to('km h-1') 
+   umet  = umet.to('km h-1') 
+   vmet  = vmet.to('km h-1') 
    ########################################
 
 
    # Pad frist and last hour for smooth edges
    # Convert times to pandas for easier manipulation
-   times = ds["time"].values
-   dt = np.diff(times).astype("timedelta64[m]").astype(int)
-   try: mean_dt = int(np.median(dt))  # assume uniform spacing
+   times = hours
+   delta_t = np.diff(times).astype("timedelta64[m]").astype(int)
+   try: mean_dt = int(np.median(delta_t))  # assume uniform spacing
    except ValueError:
       LG.critical('Not enough data for a meteogram')
       sys.exit(1)

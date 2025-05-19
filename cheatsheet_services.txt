@@ -1,4 +1,5 @@
-*.path is the watcher
+
+*.path    is the watcher
 *.service is the worker
 
 # Path
