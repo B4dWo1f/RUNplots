@@ -1,15 +1,6 @@
 #!/usr/bin/python3
 # -*- coding: UTF-8 -*-
 
-# import logging
-# LG = logging.getLogger(__name__)   # Logger for this module
-#LlG = logging.getLogger('perform')
-#fh = logging.FileHandler('/tmp/performance.log',mode='w')
-#fmt = logging.Formatter('%(asctime)s %(name)s:%(levelname)s - %(message)s')
-#fh.setFormatter(fmt)
-#fh.setLevel(logging.DEBUG)
-#LlG.addHandler(fh)
-
 import os
 import logging
 import datetime as dt
@@ -18,15 +9,8 @@ from pathlib import Path
 from functools import wraps
 from time import perf_counter
 
-# def get_current_batch(path="/storage/WRFOUT/batch.txt"):
-#     try:
-#         with open(path, 'r') as f:
-#             batch = f.read().strip()
-#             return batch
-#     except Exception:
-#         return "UNKNOWN"
 
-def batch_logger(script_path, domain, batch, is_cron=False, log_dir=None):
+def batch_logger(script_path, domain, batch, is_cron=True, log_dir=None):
    """
    Sets up a logger that writes to a log file named according to the current
    date and batch
@@ -150,28 +134,3 @@ def disable2(lg):
          return ret
       return inner
    return do_it
-
-
-
-# def inout(lg):
-#    """Logs the execution time of a certain funcion to the provided logger"""
-#    def real_timer(wrapped):
-#       def inner(*args, **kwargs):
-#          lg.debug(f'Entering {wrapped.__name__}')
-#          ret = wrapped(*args, **kwargs)
-#          lg.debug(f'Finished {wrapped.__name__}')
-#          return ret
-#       return inner
-#    return real_timer
-
-
-# def deprecated(lg):
-#    """Issues a warning when using a deprecated function"""
-#    def wrapper(wrapped):
-#       def inner(*args, **kwargs):
-#          lg.warning(f'Deprecated use of {wrapped.__name__}')
-#          ret = wrapped(*args, **kwargs)
-#          return ret
-#       return inner
-#    return wrapper
-

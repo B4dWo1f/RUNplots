@@ -120,6 +120,7 @@ def main():
                                    is_cron, log_dir='logs')
 
    LG.info("==== New run started ====")
+   LG.info(f"Cron: {is_cron}")
    try:
       process_file(fname, config_file, LG)
    except Exception as e:
