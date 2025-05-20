@@ -97,6 +97,13 @@ def load_config_or_die(fname="{here}/config.ini", create_dirs=True):
             LG.critical(msg)
             sys.exit(1)
 
+   #
+   # Normally
+   #   domain = d02
+   #   wrfout_folder = /storage/WRFOUT/Spain6_1
+   #   plots_folder  = /storage/PLOTS/Spain6_1/<domain>
+   #   data_folder   = /storage/DATA/Spain6_1/<domain>
+   #
    domain = config["paths"]["domain"]
    wrfout_folder  = Path(expanduser(config["paths"]["wrfout_folder"]))
    plots_folder   = Path(expanduser(config["paths"]["plots_folder"]))
@@ -106,10 +113,14 @@ def load_config_or_die(fname="{here}/config.ini", create_dirs=True):
    configs_folder = (base_dir / raw_configs_path).expanduser().resolve()
    # configs_folder = Path(expanduser(config["paths"]["configs"]))
    mydict = {
-         'wrfout_folder': wrfout_folder,
-         "plots_folder": plots_folder,
-         "data_folder": data_folder,
-         "configs_folder":configs_folder,
+         'wrfout_folder'  : wrfout_folder,
+         "plots_folder"   : plots_folder,
+         "data_folder"    : data_folder,
+         #
+         "configs_folder" : configs_folder,
+         "data_stations"  : data_folder/'stations', #domain/date_fmt,
+         "plots_common"   : plots_folder/domain,
+         "plots_stations" : plots_folder/'stations',
          }
 
    for label,path in mydict.items():

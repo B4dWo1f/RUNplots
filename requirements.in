@@ -15,4 +15,6 @@ rasterio
 # Legacy and geoscience tools
 cartopy
 metpy
+astral
+beautifulsoup4
 wrf-python

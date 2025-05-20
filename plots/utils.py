@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 
 def utc_shift():
    UTCshift = dt.datetime.now() - dt.datetime.utcnow()
-   UTCshift = dt.timedelta(hours = round(UTCshift.total_seconds()))
+   UTCshift = dt.timedelta(hours = round(UTCshift.total_seconds()/3600))
    return UTCshift
 
 

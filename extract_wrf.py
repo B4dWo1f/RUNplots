@@ -151,8 +151,10 @@ def wrf_vars(ncfile, prevnc=None, cache={}):
    td      = getvar(ncfile, "td", cache=cache)     # Dewpoint (C)
    t2m     = getvar(ncfile, "T2", cache=cache)     # 2m temperature (K)
    td2     = getvar(ncfile, "td2", cache=cache)    # 2m temperature (K)
+   swdown  = getvar(ncfile, "SWDOWN", cache=cache) # 2m temperature (K)
    qvapor  = getvar(ncfile, "QVAPOR", cache=cache) # Water vapor mixing ratio (kg/kg)
    pmb     = getvar(ncfile, "pressure", cache=cache)  # Full pressure (hPa)
+   slp     = getvar(ncfile, "slp", cache=cache)  # Full pressure (hPa)
 
    LG.info("Extracting wind variables...")
    # Surface wind
@@ -190,10 +192,8 @@ def wrf_vars(ncfile, prevnc=None, cache={}):
    LG.info("Extracting CAPE diagnostics...")
    cape, cin, lcl, lfc = getvar(ncfile, "cape_2d", cache=cache)
 
-   try: rh = getvar(ncfile, "rh", cache=cache)
-   except:
-      LG.warning("Relative humidity (RH) not available in file.")
-      rh = None
+   rh = getvar(ncfile, "rh", cache=cache)
+   rh2 = getvar(ncfile, "rh2", cache=cache)
 
    LG.info("Extraction complete.")
    my_vars = {"uvmet": uvmet, "w": w,
@@ -202,9 +202,10 @@ def wrf_vars(ncfile, prevnc=None, cache={}):
               # **{f"uvmet{lvl}": wrf.interplevel(uvmet, heights, lvl) for lvl in wind_levels},
               # **{f"wspd{lvl}": wrf.interplevel(wspd, heights, lvl) for lvl in wind_levels},
               "theta": theta, "tc": t, "td": td, "t2m": t2m, 'td2m':td2,
-              "qvapor": qvapor, "rh": rh,
+              "qvapor": qvapor, "rh": rh, "rh2": rh2,
               "hfx": hfx,
-              "p": pmb,
+              "p": pmb, "slp": slp, 
+              "swdown": swdown,
               "heights": heights,
               "bldepth": bldepth,
               "lats": lats, "lons": lons,

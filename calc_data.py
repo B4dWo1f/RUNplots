@@ -76,7 +76,7 @@ class CalcData(object):
             "wrfout_folder"  : fname.parent,
             "processed"      : fname.parent/"processed",
             "data_meteograms": Path(DATA_folder)/'meteograms'/domain/date_fmt,
-            "data_stations"  : Path(DATA_folder)/'stations'/domain/date_fmt,
+            "data_stations"  : Path(DATA_folder)/'stations', #domain/date_fmt,
             "data_daily"     : Path(DATA_folder)/domain/date_fmt,
             "plots_common"   : Path(OUT_folder)/domain,
             "plots_daily"    : Path(OUT_folder)/domain/date_fmt,

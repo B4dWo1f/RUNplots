@@ -17,10 +17,14 @@ LGp = logging.getLogger("perform")
 import pandas as pd
 import utils as ut
 from calc_data import CalcData
+# stations
+from stations.extract_wrf import save_prediction
+# meteograms
 from meteogram_writer import make_meteogram_timestep, append_to_meteogram
+# web, sounding & meteogram
+from plots.web import generate_background, generate_scalars, generate_vectors
 from plots.sounding import skew_t_plot
 from plots.meteogram import plot_meteogram
-from plots.web import generate_background, generate_scalars, generate_vectors
 
 
 def existing_file(path):
@@ -61,6 +65,24 @@ def process_file(fname, configfile, LG):
    domain = A.meta['domain']
    zooms = ut.load_zooms(zooms_ini, domain=domain)
 
+   # Read station metadata file
+   stations_csv = Path(configs_folder) / f"stations_{domain}.csv"
+   if not stations_csv.exists():
+      LG.warning(f"Station list not found: {stations_csv}")
+   else:
+      LG.info(f"Reading station list from: {stations_csv}")
+      df = pd.read_csv(stations_csv)
+      predictions_folder = A.paths["data_stations"] / "predictions"
+      ut.check_directory(predictions_folder)  # create if missing
+      for i, row in df.iterrows():
+         # try:
+            lat, lon = float(row["lat"]), float(row["lon"])
+            station_id = str(row["name"]).strip()
+            LG.info(f"Saving prediction for station '{station_id}'")
+            save_prediction(A, station_id, lat, lon, predictions_folder)
+         # except Exception as e:
+         #    LG.exception(f"Failed to process station '{row}': {e}")
+
    # Background (it will skip if the files already exist)
    LG.info("Generating background maps...")
    generate_background(A.paths['plots_common'], A.geometry,
@@ -76,8 +98,8 @@ def process_file(fname, configfile, LG):
 
    # Plot soundings and meteograms
    LG.info("Plotting soundings and meteograms")
-   soundings_csv = f"{configs_folder}/soundings_{domain}.csv"
-   if not os.path.isfile(soundings_csv):
+   soundings_csv = Path(configs_folder) / f"soundings_{domain}.csv"
+   if not soundings_csv.exists():
       LG.warning(f"Soundings file missing: {soundings_csv}")
    df = pd.read_csv(f"{configs_folder}/soundings_{domain}.csv", 
                     names=['lat', 'lon', 'code', 'place'])
@@ -129,145 +151,3 @@ def main():
 
 if __name__ == "__main__":
    main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-###   exit()
-###   import utils as ut
-###   import os
-###   here = os.path.dirname(os.path.realpath(__file__))
-###   is_cron = bool( os.getenv('RUN_BY_CRON') )
-###   
-###   import sys
-###   try: fname = sys.argv[1]
-###   except IndexError:
-###      print('File not specified\nUsage: pyhton <this script> /path/to/ncfile')
-###      sys.exit(1)
-###   
-###   folder = '../../Documents/storage/WRFOUT/Spain6_1'
-###   date = '2025-05-10'
-###   fname = f'{folder}/wrfout_d02_{date}_07:00:00'
-###   # fname = f'{folder}/wrfout_d02_{date}_08:00:00'
-###   # fname = f'{folder}/wrfout_d02_{date}_09:00:00'
-###   # fname = f'{folder}/wrfout_d02_{date}_10:00:00'
-###   # fname = f'{folder}/wrfout_d02_{date}_11:00:00'
-###   # fname = f'{folder}/wrfout_d02_{date}_12:00:00'
-###   # fname = f'{folder}/wrfout_d02_{date}_13:00:00'
-###   # fname = f'{folder}/wrfout_d02_{date}_14:00:00'
-###   # fname = f'{folder}/wrfout_d02_{date}_15:00:00'
-###   # fname = f'{folder}/wrfout_d02_{date}_16:00:00'
-###   # fname = f'{folder}/wrfout_d02_{date}_17:00:00'
-###   # fname = f'{folder}/wrfout_d02_{date}_18:00:00'
-###   # fname = f'{folder}/wrfout_d02_{date}_19:00:00'
-###   
-###   
-###   
-###   
-###   from calc_data import CalcData
-###   
-###   
-###   
-###   
-###   from time import time
-###   
-###   
-###   output_folder,plots_folder,data_folder = ut.get_folders()
-###   told = time()
-###   A = CalcData(fname, OUT_folder=plots_folder, DATA_folder=data_folder)
-###   print(f'Process WRF: {time()-told:.5f}s')
-###   
-###   
-###   
-###   lat, lon = 41.1, -3.6
-###   # # index
-###   # i,j = 108, 192
-###   
-###   # Plot soundings & meteograms
-###   import pandas as pd
-###   from plots.sounding import skew_t_plot
-###   from meteogram_writer import make_meteogram_timestep, append_to_meteogram
-###   from plots.meteogram import plot_meteogram
-###   df = pd.read_csv(f'soundings_{domain}.csv', 
-###                     names=['lat', 'lon', 'code', 'place'])
-###   for _,row in df.iterrows():
-###      lat,lon,code,place = row['lat'], row['lon'], row['code'], row['place']
-###      # Soundigs
-###      fout = f'{A.OUT_folder}/{A.tail_h}_sounding_{code}.png'
-###      skew_t_plot(A, lat,lon,name=place,fout=fout)
-###      # Meteogram
-###      day_nc = f"meteogram_{code}_{A.tail_d}.nc"  # stores the data for that day
-###      ds = make_meteogram_timestep(A, lat, lon)
-###      ds_full = append_to_meteogram(ds, day_nc)
-###      if len(ds_full["time"]) >= 2:
-###         fout = f'{A.OUT_folder}/meteogram_{code}.png'
-###         plot_meteogram(day_nc, fout=fout)
-###   
-###   
-###   # 
-###   # # TODO
-###   # from plots.web import generate_background, generate_scalar_fields,
-###   # from plots.web import generate_vector_fields
-###   # 
-###   # # Background (just once per day, or reused across plots)
-###   # generate_background(domain=A.domain, date=A.date, out_dir=plots_folder)
-###   # 
-###   # # Scalars: T2, RH, Wstar, CAPE, etc
-###   # generate_scalar_fields(A, out_dir=plots_folder)
-###   # 
-###   # # Vectors: winds, streamlines, etc
-###   # generate_vector_fields(A, out_dir=plots_folder)
-###   # 
-###   
-###   
-###   
-###   exit()
-###   # # output_folder = expanduser( P['system']['output_folder'] )
-###   # # plots_folder = expanduser( P['system']['plots_folder'] )
-###   # # data_folder = expanduser( P['system']['data_folder'] )
-###   # ut.check_directory(output_folder,True)
-###   # ut.check_directory(output_folder+'/processed',False)
-###   # ut.check_directory(plots_folder,False)
-###   # ut.check_directory(data_folder,False)
-###               
-###   zooms = ut.get_zooms('zooms.ini',domain=domain)
-###   
-###   import numpy as np
-###   print(np.min(hcrit:=A.drjack_vars['hcrit'].values))
-###   print(np.max(hcrit))
-###   
-###   import matplotlib.pyplot as plt
-###   try: plt.style.use('mystyle')
-###   except: pass
-###   fig, ax = plt.subplots()
-###   ax.contourf(hcrit, vmin=300, vmax=2500)
-###   fig.tight_layout()
-###   plt.show()
-###   
