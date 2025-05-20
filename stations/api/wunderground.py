@@ -88,7 +88,7 @@ def download_data(url_base):
    date = dt.datetime.now() #- dt.timedelta(days=1)
    date_str = date.strftime('%Y-%m-%d')
    url = f"{url_base}/{date_str}/{date_str}/daily"
-   html = sut.make_request(url)
+   html = sut.make_request(url, "table.history-table.desktop-table")
    soup = BeautifulSoup(html, 'html.parser')
 
    name, station_id, lat, lon, _ = parse_location_info(soup)

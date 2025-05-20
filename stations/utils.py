@@ -11,30 +11,23 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from stations.schema import STATION_CSV_COLUMNS
-from urllib.request import Request, urlopen, urlretrieve
+from playwright.sync_api import sync_playwright
 
 
-def make_request(url):
-   """ Make HTTP request """
-   req = Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-   out = False
-   while not out:
-      try:
-         html = urlopen(req, timeout=30)
-         out = True
-      except URLError as e:
-         # Log the specific URL causing the error
-         logging.error(f'URLError: {url}, Error: {e}')
-         # Print a message to console or log file
-         print(f'URLError: {url}, Error: {e}')
-         out = False
-   html_doc = html.read()
-   try:
-      charset = html.headers.get_content_charset()
-      html_doc = html_doc.decode(charset, errors='ignore')
-   except (TypeError, UnicodeDecodeError):
-      html_doc = html_doc.decode(errors='ignore')
-   return html_doc
+def make_request(url: str, element: str = None) -> str:
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        page.goto(url)
+
+        # Wait for a specific element if provided
+        if element:
+            page.wait_for_selector(element)
+
+        content = page.content()
+        browser.close()
+
+    return content
 
 
 def validate_station_df(df):

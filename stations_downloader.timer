@@ -1,0 +1,10 @@
+[Unit]
+Description=Timer to download weather station data every 5 minutes
+
+[Timer]
+OnCalendar=*:0/5
+Persistent=true
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target

@@ -65,6 +65,7 @@ def download():
       for _, row in df.iterrows():
          name = str(row["name"]).strip()
          url  = str(row["url"]).strip()
+         LG.debug(f"Attempting to download data for {name}")
 
          try:
             backend = choose_backend(url)

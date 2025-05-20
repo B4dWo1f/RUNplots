@@ -142,25 +142,9 @@ def compare(obs_df, wrf_df, title='',fout='baliza.png'):
    ax1.set_ylim(0,360)
    ax1.legend()
 
-   # Grid and ticks
-   axes[-1].yaxis.set_minor_locator(ticker.MultipleLocator(22.5))
-   axes[-1].xaxis.set_minor_locator(mdates.HourLocator(interval=1))
-   axes[-1].xaxis.set_major_locator(mdates.HourLocator(interval=3))
-   for ax in axes:
-      ax.grid(True)
-      # Enable minor ticks on the X-axis
-      ax.minorticks_on()
-      # Grid lines ONLY for X-axis minor ticks
-      ax.xaxis.grid(which='minor', linestyle=':', linewidth=0.5, color='gray')
-      ax.set_xlim(start,end)
-   axes[-1].xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
-   for label in ax1.get_xticklabels(which='major'):
-      label.set(rotation=20, horizontalalignment='right')
-
    
    msg = dt.datetime.now().strftime('Actualizado: %H:%M %d/%m/%Y')
    props = dict(boxstyle='round', facecolor='white', alpha=0.9)
-   
    ax1.text(1, .998, msg, transform=ax0.transAxes, va='top', ha='right', bbox=props)
    
    n_ax = 2  # after plotting wind, the next available axis is axes[n_ax]
@@ -209,6 +193,18 @@ def compare(obs_df, wrf_df, title='',fout='baliza.png'):
       ax3.plot(x,y, 'C1-o')
       # Settings
       ax3.set_ylabel('Solar ($W/m^2$)')
+
+   # Grid and ticks
+   for ax in axes:
+      ax.grid()
+      ax.xaxis.set_major_locator(mdates.HourLocator(interval=3))
+      ax.xaxis.set_minor_locator(mdates.HourLocator(interval=1))
+      # Grid lines ONLY for X-axis minor ticks
+      ax.xaxis.grid(which='minor', linestyle=':', linewidth=0.5, color='gray')
+      ax.set_xlim(start,end)
+   axes[-1].xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
+   for label in ax1.get_xticklabels(which='major'):
+      label.set(rotation=20, horizontalalignment='right')
 
    fig.tight_layout()
    fig.savefig(fout)

@@ -1,6 +1,6 @@
 # ~/CODES/RUN_plots/sync_wrfout_watcher.service
 [Unit]
-Description=Copy wrfout_watcher.service to systemd user config
+Description=Copy wrfout_watcher.service to systemd user configs
 
 [Service]
 Type=oneshot
