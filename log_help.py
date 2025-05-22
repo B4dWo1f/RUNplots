@@ -23,11 +23,7 @@ def batch_logger(script_path, domain, batch, is_cron=True, log_dir=None):
    script_path = Path(script_path).resolve()
    base_name = script_path.stem
    log_name = f"{base_name}_{domain}_GFS{batch.strftime('%H')}"
-   # base = os.path.splitext(os.path.basename(script_path))[0]
-   # log_name = f"{base}_{domain}_GFS{batch.strftime('%H')}.log"
 
-   # log_dir = log_dir or os.path.dirname(script_path)
-   # log_path = os.path.join(log_dir, log_name)
    log_dir = Path(log_dir) if log_dir else script_path.parent
    ut.check_directory(log_dir)
 

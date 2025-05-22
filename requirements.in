@@ -17,4 +17,5 @@ cartopy
 metpy
 astral
 beautifulsoup4
+playwright
 wrf-python
