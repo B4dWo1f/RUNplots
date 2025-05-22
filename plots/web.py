@@ -249,8 +249,10 @@ def generate_vectors(WRF, config_path='configs/plots.ini', zooms={}):
        'wind2000'  : wrf['uvmet2000'].values,
        'wind2500'  : wrf['uvmet2500'].values,
        'wind3000'  : wrf['uvmet3000'].values,
-       'uvblavg'   : drjack['uvblavg'],
-       'uvtop'     : drjack['uvtop'],
+       # 'uvblavg'   : drjack['uvblavg'],
+       # 'uvtop'     : drjack['uvtop'],
+       'blwind'    : drjack['uvblavg'],
+       'bltopwind' : drjack['uvtop'],
    }
 
    config = ut.load_config(config_path)

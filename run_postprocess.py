@@ -141,7 +141,9 @@ def main():
    LG, LGp = log_help.batch_logger(script_path, domain, batch,
                                    is_cron, log_dir='logs')
 
-   LG.info("==== New run started ====")
+   LG.info("=================================================")
+   LG.info("=                New run started                =")
+   LG.info("=================================================")
    LG.info(f"Cron: {is_cron}")
    try:
       process_file(fname, config_file, LG)

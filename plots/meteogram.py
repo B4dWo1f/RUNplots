@@ -310,7 +310,6 @@ def plot_meteogram(fname,title='',name='',fout='meteogram.png'):
    ymax = np.max([ np.max(hglider),
                    np.max(zsfclcl),
                    np.max(zblcl) ]) +500
-   ymax = 3000
    ax.set_ylim(ymin,ymax)
    ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
    ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))

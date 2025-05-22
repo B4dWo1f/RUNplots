@@ -60,7 +60,7 @@ def scalar_plot(ax, crs_data, lons, lats, prop,
    LG.debug(f'Plotting {prop_name}')
 
    try:
-       msg = f'lims: {vmin}<--{np.nanmin(prop):.1f}/{np.nanmax(prop):.1f}-->{vmax}'
+       msg = f'{prop_name} lims: {vmin}/{np.nanmin(prop):.1f}/{np.nanmax(prop):.1f}/{vmax}'
    except Exception as e:
        msg = f'Failed to compute min/max for {prop_name}: {e}'
    LG.debug(msg)

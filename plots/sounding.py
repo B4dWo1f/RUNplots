@@ -500,11 +500,11 @@ def skew_t_plot(WRF, lat,lon, fout='sounding.png', title='', name='', interpolat
 
 ### COMMON ####################################################################
    # Ground
-   skew_bot.ax.axhline(gnd_p,c='k',ls='--')
-   ax_cloud_bot.axhline(gnd_p,c='k',ls='--')
-   ax_wind_bot.axhline(gnd_p,c='k',ls='--')
+   skew_bot.ax.axhline(p[0].magnitude,c='k',ls='--')
+   ax_cloud_bot.axhline(p[0].magnitude,c='k',ls='--')
+   ax_wind_bot.axhline(p[0].magnitude,c='k',ls='--')
    trans, _, _ = skew_bot.ax.get_yaxis_text1_transform(0)
-   ty = gnd_p+15*gnd_p.units    # Text vertical position
+   ty = (p[0].magnitude+15)*p.units
    skew_bot.ax.text(0,ty,f'GND:{gnd:.0f~P}', transform=trans)
 
 
