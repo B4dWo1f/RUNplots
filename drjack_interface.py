@@ -1,6 +1,11 @@
 #!/usr/bin/python3
 # -*- coding: UTF-8 -*-
 
+import log_help
+import logging
+LG = logging.getLogger(f'main.{__name__}')
+LGp = logging.getLogger(f'perform.{__name__}')
+
 import os
 here = os.path.dirname(os.path.realpath(__file__))
 HOME = os.getenv('HOME')
@@ -9,21 +14,18 @@ def recompile(f90):
    f90_root = '.'.join(f90.split('.')[0:-1])
    diff = os.popen(f'cd {here} && diff {f90} .{f90}').read().strip()
    if len(diff) > 0:
-      # LG.warning(f'Compiling {f90}')
-      print(f'Compiling {f90}')
+      LG.warning(f'Compiling {f90}')
       compile_command = f'python3 -m numpy.f2py -c -m {f90_root} {f90}'
       com = f'cd {here} && {compile_command} && cp {f90} .{f90} && cd -'
-      # LG.warning(com)
-      print(com)
+      LG.warning(com)
       os.system(com)
-   else: print('Already compiled') # LG.debug('Already compiled')
+   else: LG.debug('Already compiled')
 
 recompile(f'drjack_num.f90')
 try: import drjack_num
 except ModuleNotFoundError:
    recompile(f'drjack_num.f90')
    import drjack_num  # TODO missing check here
-# import mydrjack_num as drjack_num_py
 import numpy as np
 
 from time import time
@@ -173,7 +175,7 @@ def calc_wstar(hfx,bldepth):
 
 
 def calc_hcrit(wstar, terrain, bldepth, w_crit=1.143):
-   # LG.info('Calculating hcrit')
+   LG.info('Calculating hcrit')
    w_crit_fpm = w_crit * 225/1.143
    hcrit_function = drjack_num.calc_hcrit
    hcrit = drjack_num.calc_hcrit( wstar.transpose(), terrain.transpose(),
@@ -184,6 +186,7 @@ def calc_hcrit(wstar, terrain, bldepth, w_crit=1.143):
 
 
 def calc_sfclclheight( pressure, tc, td, heights, terrain, bldepth):
+   LG.info('Calculating sfclclheight')
    # Cu Cloudbase ~I~where Cu Potential > 0~P~
    zsfclcl = drjack_num.calc_sfclclheight( pressure.transpose(),
                                        tc.transpose(), td.transpose(),
@@ -199,6 +202,7 @@ def calc_sfclclheight( pressure, tc, td, heights, terrain, bldepth):
 
 
 def calc_blclheight(qvapor,heights,terrain,bldepth,pmb,tc):
+   LG.info('Calculating blclheight')
    qvaporblavg = calc_blavg( qvapor, heights, terrain, bldepth)
    heightsT = heights.transpose()
    terrainT = terrain.transpose()
@@ -216,6 +220,7 @@ def calc_blclheight(qvapor,heights,terrain,bldepth,pmb,tc):
 
 
 def calc_hglider(hcrit,zsfclcl,zblcl):
+   LG.info('Calculating hglider')
    hglider = np.maximum(np.minimum(zblcl, zsfclcl), hcrit)
    hglider = wrap_as_xarray(hglider, hcrit, name="hglider",
                  description="Glider-usable thermal height estimate (m)",
@@ -223,6 +228,7 @@ def calc_hglider(hcrit,zsfclcl,zblcl):
    return hglider
 
 def calc_wind_blavg(wind, heights, terrain, bldepth,name='', description=''):
+   LG.info('Calculating wind_blavg')
    blavgwind = calc_blavg(wind, heights, terrain, bldepth)
    blavgwind = wrap_as_xarray(blavgwind.transpose(), terrain, name=name,
                  description=description,
@@ -230,6 +236,7 @@ def calc_wind_blavg(wind, heights, terrain, bldepth,name='', description=''):
    return blavgwind
 
 def calc_bltopwind(uEW,vNS,heights,terrain,bldepth):
+   LG.info('Calculating bltopwind')
    utop,vtop = drjack_num.calc_bltopwind(uEW.transpose(),
                                          vNS.transpose(),
                                          heights.transpose(),
@@ -246,6 +253,7 @@ def calc_bltopwind(uEW,vNS,heights,terrain,bldepth):
 
 
 def calc_Wspeed(u,v,name='',description=''):
+   LG.info('Calculating Wspeed')
    wspd = np.sqrt( np.square(u) + np.square(v) )
    wspd = wrap_as_xarray(wspd, u, name=name, description=description)
    return wspd

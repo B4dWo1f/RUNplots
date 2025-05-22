@@ -49,7 +49,7 @@ def get_bar_width(m):
 
 
 @log_help.timer(LG, LGp)
-def plot_meteogram(fname,fout='meteogram.png'):
+def plot_meteogram(fname,title='',name='',fout='meteogram.png'):
    """
    Input: fname is the path to an xrarray created by meteogram_writer.py which
           populates the ncfile as new wrfout files become avialable
@@ -147,6 +147,7 @@ def plot_meteogram(fname,fout='meteogram.png'):
    umet    = umet * units('m s-1')
    vmet    = vmet * units('m s-1')
    ## Conversions
+   date = hours[0].astype('M8[ms]').astype(dt.datetime)  # for title
    UTCshift = dt.datetime.now() - dt.datetime.utcnow()
    UTCshift = dt.timedelta(hours = round(UTCshift.total_seconds()/3600))
    UTCshift = np.timedelta64(UTCshift)
@@ -330,7 +331,14 @@ def plot_meteogram(fname,fout='meteogram.png'):
    ax0.set_yticklabels(['low','mid','high'])
    plt.setp(ax0.get_xticklabels(), visible=False)
    ax0.set_ylabel('Cloud %')
-   ax0.set_title(f'Arcones') #'{titles[iplace].capitalize()} {target_date}')
+   # Title
+   if len(title) > 0:
+      pass
+   else:
+      title = f"{date.strftime('%d/%m/%Y')}"
+      if len(name) > 0:
+         title = f'{name} {title}'
+   ax0.set_title(title)
 
 
 ### SAVE ######################################################################

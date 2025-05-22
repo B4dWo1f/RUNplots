@@ -30,18 +30,23 @@ do
    for file1 in `ls ${WRFOUT_DIR}/wrfout_d01* 2> /dev/null`
    do
       sleep 10   # wait in case the files are being written
-      echo "Processing The following files:"
+      echo "==================================="
+      echo "= Processing The following files: ="
+      echo "==================================="
       file2=`echo $file1 | sed 's/d01/d02/'`
+      echo "========"
       ls $file1
       ls $file2
       date
-      time ($VENV_PY "$MAIN_SCRIPT" "$file1" & $VENV_PY "$MAIN_SCRIPT" "$file2")
-      # time ((python3 "$MAIN_SCRIPT" $file1 || echo "$(date): Failed to process $file1" >> /tmp/wrfout_wrapper.err) & (python3 "$MAIN_SCRIPT" $file2 || echo "$(date): Failed to process $file2" >> /tmp/wrfout_wrapper.err) )
+      # time (($VENV_PY "$MAIN_SCRIPT" "$file1") & ($VENV_PY "$MAIN_SCRIPT" "$file2"))
+      time (($VENV_PY "$MAIN_SCRIPT" "$file1" || echo "`date`: Failed to process $file1" >> /tmp/wrfout_wrapper.err) & ($VENV_PY "$MAIN_SCRIPT" "$file2" || echo "`date`: Failed to process $file2" >> /tmp/wrfout_wrapper.err) )
       date
       mv $file1 ${PROCESSED_DIR}
       mv $file2 ${PROCESSED_DIR}
+      echo "moved file $file1"
+      echo "moved file $file2"
+      echo "========"
    done
-   # echo "No more files"
    sleep 5
 done
 echo "$(date): wrfout_watcher.sh finished"

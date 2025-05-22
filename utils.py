@@ -119,7 +119,6 @@ def load_config_or_die(fname="{here}/config.ini", create_dirs=True):
          #
          "configs_folder" : configs_folder,
          "data_stations"  : data_folder/'stations', #domain/date_fmt,
-         "plots_common"   : plots_folder/domain,
          "plots_stations" : plots_folder/'stations',
          }
 

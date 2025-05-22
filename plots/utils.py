@@ -20,7 +20,7 @@ def utc_shift():
 
 @log_help.timer(LG, LGp)
 def save_figure(ax,fname, dpi=150, ext='webp'):
-   LG.info(f'Saving: {fname}')
+   LG.info(f'Saving: {fname}.{ext}')
    # fig.savefig(fname, transparent=True, bbox_inches='tight', pad_inches=0,
    #                    dpi=dpi)
    fig = ax.figure

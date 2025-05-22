@@ -105,7 +105,7 @@ def get_cumulus_base_top(p,tc,parcel,lcl_p, lcl_t):
             LG.critical(msg)
             cu_top_p, cu_top_t = None, None
       else: # no cumulus
-         LG.warning('No Cumulus: Parcel not buoyant at LCL')
+         LG.debug('No Cumulus: Parcel not buoyant at LCL')
          cu_base_p, cu_base_t = None, None
          cu_top_p, cu_top_t = None, None
    return (cu_base_p, cu_base_t), (cu_top_p, cu_top_t)

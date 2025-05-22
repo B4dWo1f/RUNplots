@@ -107,7 +107,7 @@ def process_file(fname, configfile, LG):
       lat,lon, code,place = row['lat'],row['lon'], row['code'],row['place']
 
       # Sounding
-      fout = A.paths["plots_daily"] / f"{A.tail_h}_sounding_{code}.png"
+      fout = A.paths["plots_daily"] / f"{A.tail_h}_sounding_{code}.webp"
       skew_t_plot(A, lat, lon, name=place, fout=fout)
 
       # Meteogram
@@ -115,8 +115,8 @@ def process_file(fname, configfile, LG):
       ds = make_meteogram_timestep(A, lat, lon)
       ds_full = append_to_meteogram(ds, day_nc)
       if len(ds_full["time"]) >= 2:
-         fout = A.paths["plots_daily"] / f"meteogram_{code}.png"
-         plot_meteogram(day_nc, fout=fout)
+         fout = A.paths["plots_daily"] / f"meteogram_{code}.webp"
+         plot_meteogram(day_nc, name=place, fout=fout)
       else:
          LG.debug(f"Skipping meteogram plot for {code} (only one time point)")
 
