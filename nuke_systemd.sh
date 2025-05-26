@@ -26,3 +26,4 @@ systemctl --user daemon-reload
 
 echo "✅ All related systemd units have been nuked."
 
+echo "Maybe you want to rm *.log *.err logs/*"

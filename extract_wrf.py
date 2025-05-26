@@ -274,7 +274,7 @@ def drjack_vars(wrf_vars):
    LG.debug(f"Computing convective variables...")
    wblmaxmin  = drj.calc_wblmaxmin(0, w, heights, terrain, bldepth)
    wstar      = drj.calc_wstar(hfx, bldepth)
-   hcrit      = drj.calc_hcrit(wstar, terrain, bldepth, w_crit=1.143) # TODO w_crit=0
+   hcrit      = drj.calc_hcrit(wstar, terrain, bldepth, w_crit=0.5) #1.143)
 
    LG.debug(f"Computing cloud base heights...")
    zsfclcl = drj.calc_sfclclheight(pressure, tc,td, heights,terrain, bldepth)

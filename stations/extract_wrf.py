@@ -91,4 +91,5 @@ def save_prediction(WRF, station_id, lat_req, lon_req, folder):
       LG.info(f"File {csv_path} does not exist")
       df = new_df
 
+   LG.info(f'Saving station {station_id} to file {csv_path}')
    ut.save_station_csv(df, csv_path)

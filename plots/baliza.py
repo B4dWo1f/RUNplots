@@ -196,11 +196,12 @@ def compare(obs_df, wrf_df, title='',fout='baliza.png'):
 
    # Grid and ticks
    for ax in axes:
-      ax.grid()
+      ax.grid(True)
       ax.xaxis.set_major_locator(mdates.HourLocator(interval=3))
       ax.xaxis.set_minor_locator(mdates.HourLocator(interval=1))
       # Grid lines ONLY for X-axis minor ticks
-      ax.xaxis.grid(which='minor', linestyle=':', linewidth=0.5, color='gray')
+      ax.xaxis.grid(which='minor', linestyle=':', linewidth=.5, color='gray')
+      ax.xaxis.grid(which='major', linestyle='-', linewidth=.5, color='gray')
       ax.set_xlim(start,end)
    axes[-1].xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
    for label in ax1.get_xticklabels(which='major'):

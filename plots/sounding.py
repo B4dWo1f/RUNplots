@@ -238,6 +238,8 @@ def skew_t_plot(WRF, lat,lon, fout='sounding.png', title='', name='', interpolat
    rh      = rh/100  #relative humidity 0-1
    ## Conversions
    t0c = t0.to('degC')
+   u = u.to('km h-1')  
+   v = v.to('km h-1')  
    ########################################
 
 

@@ -18,13 +18,11 @@ import pandas as pd
 import utils as ut
 from calc_data import CalcData
 # stations
-from stations.extract_wrf import save_prediction
+import stations
 # meteograms
 from meteogram_writer import make_meteogram_timestep, append_to_meteogram
 # web, sounding & meteogram
-from plots.web import generate_background, generate_scalars, generate_vectors
-from plots.sounding import skew_t_plot
-from plots.meteogram import plot_meteogram
+import plots 
 
 
 def existing_file(path):
@@ -75,40 +73,40 @@ def process_file(fname, configfile, LG):
       predictions_folder = A.paths["data_stations"] / "predictions"
       ut.check_directory(predictions_folder)  # create if missing
       for i, row in df.iterrows():
-         # try:
-            lat, lon = float(row["lat"]), float(row["lon"])
-            station_id = str(row["name"]).strip()
-            LG.info(f"Saving prediction for station '{station_id}'")
-            save_prediction(A, station_id, lat, lon, predictions_folder)
-         # except Exception as e:
-         #    LG.exception(f"Failed to process station '{row}': {e}")
+         lat, lon = float(row["lat"]), float(row["lon"])
+         station_id = str(row["name"]).strip()
+         LG.info(f"Saving prediction for station '{station_id}'")
+         stations.extract_wrf.save_prediction(A, station_id, lat, lon, predictions_folder)
 
    # Background (it will skip if the files already exist)
-   LG.info("Generating background maps...")
-   generate_background(A.paths['plots_common'], A.geometry,
-                       csv_dir=configs_folder, zooms=zooms)
+   LG.info("==== Generating background maps ====")
+   plots.web.generate_background(A.paths['plots_common'], A.geometry,
+                                 csv_dir=configs_folder, zooms=zooms)
 
    # Scalars: T2, RH, Wstar, CAPE, etc
    LG.info("Plotting scalar fields...")
-   generate_scalars(A, config_path=plots_ini, zooms=zooms)
+   plots.web.generate_scalars(A, config_path=plots_ini, zooms=zooms)
 
    # Vectors: winds, streamlines, etc
    LG.info("Plotting vector fields...")
-   generate_vectors(A, config_path=plots_ini, zooms=zooms)
+   plots.web.generate_vectors(A, config_path=plots_ini, zooms=zooms)
 
-   # Plot soundings and meteograms
+   # Soundings & meteograms
+   # Get points of interest for soundings and meteograms
    LG.info("Plotting soundings and meteograms")
    soundings_csv = Path(configs_folder) / f"soundings_{domain}.csv"
    if not soundings_csv.exists():
       LG.warning(f"Soundings file missing: {soundings_csv}")
    df = pd.read_csv(f"{configs_folder}/soundings_{domain}.csv", 
                     names=['lat', 'lon', 'code', 'place'])
+
+   # Plot sounding and meteogram for each point
    for _, row in df.iterrows():
       lat,lon, code,place = row['lat'],row['lon'], row['code'],row['place']
 
       # Sounding
       fout = A.paths["plots_daily"] / f"{A.tail_h}_sounding_{code}.webp"
-      skew_t_plot(A, lat, lon, name=place, fout=fout)
+      plots.sounding.skew_t_plot(A, lat, lon, name=place, fout=fout)
 
       # Meteogram
       day_nc = A.paths["data_meteograms"] / f"meteogram_{code}.nc"
@@ -116,7 +114,7 @@ def process_file(fname, configfile, LG):
       ds_full = append_to_meteogram(ds, day_nc)
       if len(ds_full["time"]) >= 2:
          fout = A.paths["plots_daily"] / f"meteogram_{code}.webp"
-         plot_meteogram(day_nc, name=place, fout=fout)
+         plots.meteogram.plot_meteogram(day_nc, name=place, fout=fout)
       else:
          LG.debug(f"Skipping meteogram plot for {code} (only one time point)")
 

@@ -63,9 +63,11 @@ def download():
       df = pd.read_csv(STATIONS_CSV)
 
       for _, row in df.iterrows():
+         code = str(row["code"]).strip()
          name = str(row["name"]).strip()
          url  = str(row["url"]).strip()
-         LG.debug(f"Attempting to download data for {name}")
+         LG.info(f"Attempting to download data for {name}")
+         LG.info(f"{url}")
 
          try:
             backend = choose_backend(url)
@@ -73,7 +75,7 @@ def download():
             save_station_csv(data_df, OUT_DIR / f"{name}.csv")
             LG.info(f"Saved {len(data_df)} obs rows for {name}")
          except Exception as e:
-            LG.error(f"Failed to fetch or save station {name}: {e}")
+            LG.error(f"Failed to fetch or save station {code}: {e}")
 
 def compare_prediction_observation_dirs(pred_dir, obs_dir):
    """

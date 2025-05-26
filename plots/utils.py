@@ -10,23 +10,23 @@ import os
 import datetime as dt
 from configparser import ConfigParser, ExtendedInterpolation
 import matplotlib.pyplot as plt
+from typing import Union, Optional, Tuple, List
 
 
 def utc_shift():
    UTCshift = dt.datetime.now() - dt.datetime.utcnow()
    UTCshift = dt.timedelta(hours = round(UTCshift.total_seconds()/3600))
+   LG.info(f'UTCshift: {UTCshift}')
    return UTCshift
 
 
 @log_help.timer(LG, LGp)
 def save_figure(ax,fname, dpi=150, ext='webp'):
-   LG.info(f'Saving: {fname}.{ext}')
-   # fig.savefig(fname, transparent=True, bbox_inches='tight', pad_inches=0,
-   #                    dpi=dpi)
+   LG.debug(f'Saving: {fname}.{ext}')
    fig = ax.figure
    fig.savefig(f"{fname}.{ext}", format=ext, dpi=150, transparent=True,
             bbox_inches='tight', pad_inches=0)
-
+   LG.info(f'Saved: {fname}.{ext}')
    plt.close('all')
 
 
@@ -97,14 +97,6 @@ def load_config(fname='plots.ini'):
 
    return parsed
 
-
-from configparser import ConfigParser, ExtendedInterpolation
-from typing import Union, Optional, Tuple, List
-import logging
-import os
-import log_help
-
-LG = logging.getLogger(__name__)
 
 @log_help.timer(LG, LGp)
 def scalar_props(config: Union[str, dict], section: str) -> Tuple[float, float, float, float, Optional[List[float]], str, str, str]:
