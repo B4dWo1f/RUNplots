@@ -93,14 +93,12 @@ def get_cumulus_base_top(p,tc,parcel,lcl_p, lcl_t):
       if ftc(lcl_p) * tc.units < lcl_t: # cumulus
          LG.info('Cumulus expected')
          cu_base_p, cu_base_t = lcl_p, lcl_t
-         inter_p, inter_t = mpcalc.find_intersections(p, tc, parcel, log_x=True)
-         if len(inter_p) == 1:
+         inter_p,inter_t = mpcalc.find_intersections(p, tc,parcel, log_x=True)
+         try:
             cu_top_p, cu_top_t = inter_p[0], inter_t[0]
             LG.debug(f'Cumulus base: {cu_base_p:.1f}, {cu_base_t:.1f}')
             LG.debug(f'Cumulus top: {cu_top_p:.1f}, {cu_top_t:.1f}')
-         elif len(inter_p) > 1:
-            cu_top_p, cu_top_t = inter_p[0], inter_t[0]
-         else:
+         except:
             msg = 'No intersection found above LCL; cumulus top undefined'
             LG.critical(msg)
             cu_top_p, cu_top_t = None, None
@@ -207,6 +205,11 @@ def get_cloud_extension(p,tc,td,rh, cu_base,cu_top, threshold=.3, width=.2, N=0)
 
 
 def get_cumulus(ps,cu_base, cu_top):
+   """
+   returns an array with 0 where there is no cumulus clouds and 1 where there
+   is
+   The size is controlled by ps
+   """
    if all(v is None for v in (cu_base, cu_top)):
       cumulus = ps.magnitude * 0.
    else:
@@ -215,7 +218,9 @@ def get_cumulus(ps,cu_base, cu_top):
 
 def get_overcast(rh):
    """
-   returns the probability of cloud
+   returns an array with 0 where there is no overcast clouds and 1 where there
+   is
+   The size is controlled by rh
    """
    def rh_log_threshold(nz, rh_top=0.9, rh_bottom=1):
       """Create a log-scaled RH threshold profile."""

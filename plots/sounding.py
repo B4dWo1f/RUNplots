@@ -272,6 +272,15 @@ def skew_t_plot(WRF, lat,lon, fout='sounding.png', title='', name='', interpolat
    parcel = mpcalc.parcel_profile(p, t0c, td0)
    lcl_p, lcl_t = mpcalc.lcl(p[0], t0c, td0)
    lcl_t = lcl_t.to('degC')
+   # Find all intersections between parcel and T
+   inter_p, inter_t = mpcalc.find_intersections(p, tc, parcel, log_x=True)
+   if len(inter_p)>0:
+      if lcl_p < inter_p[0]:
+         techo = inter_p[0], inter_t[0]
+      else:
+         techo = lcl_p, lcl_t
+   else:
+      techo = np.nan*lcl_p.units, np.nan*lcl_t.units
 
 
    # Grid plot
@@ -303,6 +312,10 @@ def skew_t_plot(WRF, lat,lon, fout='sounding.png', title='', name='', interpolat
    skew_bot.plot(lcl_p, lcl_t, 'k.')
    skew_bot.shade_cape(p, tc, parcel)
    skew_bot.shade_cin(p, tc, parcel, tdc)
+   # techo
+   skew_bot.ax.axhline(techo[0], color=(0.5,0.5,0.5), ls='--')
+   skew_bot.plot(techo[0], techo[1], 'k.')
+   skew_bot.ax.text(techo[1], techo[0], f"{p2m(techo[0]).to('m'):.0f~P}")
    ## Windbarbs
    n = Npoints//50
    inds, = np.where(p>Pmed)
@@ -372,10 +385,6 @@ def skew_t_plot(WRF, lat,lon, fout='sounding.png', title='', name='', interpolat
    cu_top_p, cu_top_t = top
    cumulus = dq.get_cumulus(p,cu_base_p, cu_top_p)
    overcast = dq.get_overcast(rh)
-   if all(v is not None for v in (cu_base_p, cu_base_t)):
-      skew_bot.ax.axhline(cu_base_p, color=(0.5,0.5,0.5), ls='--')
-      cu_base_m = mpcalc.pressure_to_height_std(cu_base_p).to('m')
-      skew_bot.ax.text(cu_base_t,cu_base_p, f'{cu_base_m:.0f~P}',ha='left')
    # Generate clouds image from p, overcast and cumulus
    rep = 6  # repeat the columns for a sharper transition between O and C
    mats =  [overcast for _ in range(rep)]
