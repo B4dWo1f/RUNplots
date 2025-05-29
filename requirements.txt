@@ -6,12 +6,16 @@
 #
 affine==2.4.0
     # via rasterio
+astral==3.2
+    # via -r requirements.in
 attrs==25.3.0
     # via rasterio
 basemap==1.4.1
     # via wrf-python
 basemap-data==1.3.2
     # via basemap
+beautifulsoup4==4.13.4
+    # via -r requirements.in
 cartopy==0.24.1
     # via -r requirements.in
 certifi==2025.4.26
@@ -43,6 +47,8 @@ flexparser==0.4
     # via pint
 fonttools==4.57.0
     # via matplotlib
+greenlet==3.2.2
+    # via playwright
 idna==3.10
     # via requests
 kiwisolver==1.4.8
@@ -92,8 +98,12 @@ platformdirs==4.3.8
     # via
     #   pint
     #   pooch
+playwright==1.52.0
+    # via -r requirements.in
 pooch==1.8.2
     # via metpy
+pyee==13.0.0
+    # via playwright
 pyparsing==3.2.3
     # via
     #   matplotlib
@@ -131,13 +141,17 @@ shapely==2.1.0
     # via cartopy
 six==1.17.0
     # via python-dateutil
+soupsieve==2.7
+    # via beautifulsoup4
 traitlets==5.14.3
     # via metpy
 typing-extensions==4.13.2
     # via
+    #   beautifulsoup4
     #   flexcache
     #   flexparser
     #   pint
+    #   pyee
 tzdata==2025.2
     # via pandas
 urllib3==2.4.0

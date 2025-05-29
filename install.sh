@@ -8,12 +8,13 @@ sudo add-apt-repository -y ppa:deadsnakes/ppa
 sudo apt-get update
 pyVERSION="3.10"
 PKG_NAME="python$pyVERSION"
-sudo apt-get install -y \
+sudo apt-get install \
     "$PKG_NAME" \
     "$PKG_NAME"-dev \
     "$PKG_NAME"-venv \
     "$PKG_NAME"-distutils \
     "$PKG_NAME"-lib2to3 \
+    "$PKG_NAME"-gdbm \
     "$PKG_NAME"-tk \
     build-essential \
     libffi-dev \
@@ -37,4 +38,4 @@ playwright install
 
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
-echo "${GREEN}✅ All done!${NC}"
+echo -e "${GREEN}✅ All done!${NC}"
