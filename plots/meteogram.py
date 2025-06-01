@@ -302,9 +302,9 @@ def plot_meteogram(fname,title='',name='',fout='meteogram.png'):
                                          color=rain_color, zorder=50)
       # rain 1mm scale
       ax.bar(hours[0], terrain+rain_scale, width=get_bar_width(15),
-             color='none', edgecolor='black', zorder=99)
+             color='none', edgecolor='black', zorder=59)
       ax.text(hours[0]-np.timedelta64(22, 'm'), GND+rain_scale, '1mm',
-              rotation='vertical', ha='left', va='top', zorder=99)
+              rotation='vertical', ha='left', va='top', zorder=61) # XXX bad ordering
 
 
    # LAYER 6. Ground
