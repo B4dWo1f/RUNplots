@@ -74,7 +74,7 @@ def process_file(fname, configfile, LG):
       ut.check_directory(predictions_folder)  # create if missing
       for i, row in df.iterrows():
          lat, lon = float(row["lat"]), float(row["lon"])
-         station_id = str(row["name"]).strip()
+         station_id = str(row["code"]).strip()
          LG.info(f"Saving prediction for station '{station_id}'")
          stations.extract_wrf.save_prediction(A, station_id, lat, lon, predictions_folder)
 

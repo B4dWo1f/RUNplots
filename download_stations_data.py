@@ -72,7 +72,7 @@ def download():
          try:
             backend = choose_backend(url)
             data_df = backend(url)
-            save_station_csv(data_df, OUT_DIR / f"{name}.csv")
+            save_station_csv(data_df, OUT_DIR / f"{code}.csv")
             LG.info(f"Saved {len(data_df)} obs rows for {name}")
          except Exception as e:
             LG.error(f"Failed to fetch or save station {code}: {e}")
@@ -117,6 +117,8 @@ def plot():
    PLOTS = paths['plots_stations']
    PREDICTIONS = paths['data_folder'] / "stations/predictions"
    OBSERVATIONS = paths['data_folder'] / "stations/observations"
+   # for domain in ['d01','d02']:
+   #    STATIONS_CSV = paths['configs_folder'] / f"stations_{domain}.csv"
    common = compare_prediction_observation_dirs(PREDICTIONS, OBSERVATIONS)
    for fname in sorted(common):
       pred = PREDICTIONS  / fname
