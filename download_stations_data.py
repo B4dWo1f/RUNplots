@@ -22,6 +22,15 @@ logging.basicConfig(
    format='[%(asctime)s] %(levelname)s - %(message)s',
    datefmt='%Y/%m/%d %H:%M:%S'
 )
+# File handler
+log_file = Path("logs/stations_downloader.log")
+file_handler = logging.FileHandler(log_file, mode='a')
+file_handler.setFormatter(logging.Formatter(
+    '[%(asctime)s] %(levelname)s - %(message)s',
+    datefmt='%Y/%m/%d %H:%M:%S'
+))
+LG.addHandler(file_handler)
+
 
 
 # Select the correct API backend based on URL
@@ -70,6 +79,7 @@ def download():
          LG.info(f"{url}")
 
          try:
+            LG.info(f"Downloading data for station: {name} ({url})")
             backend = choose_backend(url)
             data_df = backend(url)
             save_station_csv(data_df, OUT_DIR / f"{code}.csv")
@@ -112,6 +122,7 @@ def plot():
    """
    Generate comparison plots for all stations that exist in both folders.
    """
+   LG.info('plotting stations')
    configfile = 'config.ini'
    paths = ut.load_config_or_die(configfile)
    PLOTS = paths['plots_stations']
@@ -122,6 +133,7 @@ def plot():
    common = compare_prediction_observation_dirs(PREDICTIONS, OBSERVATIONS)
    for fname in sorted(common):
       pred = PREDICTIONS  / fname
+      LG.debug(f"station: {pred}")
       try:
          obs  = OBSERVATIONS / fname
          fout = PLOTS / fname.replace('csv','webp')

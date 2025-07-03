@@ -7,9 +7,9 @@ HOME = os.getenv('HOME')
 STYLE_PATH = os.path.join(here, "styles", "RASP.mplstyle")
 is_cron = False
 is_cron = bool( os.getenv('RUN_BY_CRON') )
-if is_cron:
-   import matplotlib as mpl
-   mpl.use('Agg')
+# if is_cron:
+import matplotlib as mpl
+mpl.use('Agg')
 
 
 import matplotlib.pyplot as plt

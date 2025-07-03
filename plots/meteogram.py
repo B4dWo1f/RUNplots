@@ -11,6 +11,9 @@ here = os.path.dirname(os.path.realpath(__file__))
 HOME = os.getenv('HOME')
 STYLE_PATH = os.path.join(here, "styles", "RASP.mplstyle")
 
+import matplotlib as mpl
+mpl.use('Agg')
+
 import sys
 import datetime as dt
 from . import colormaps as mcmaps
@@ -18,8 +21,6 @@ from . import utils as ut
 from datetime import timedelta
 import matplotlib.pyplot as plt
 plt.style.use(STYLE_PATH)
-import matplotlib as mpl
-mpl.use('Agg')
 from matplotlib.patches import Rectangle
 import matplotlib.dates as mdates
 import numpy as np
@@ -52,7 +53,7 @@ def get_bar_width(m):
 
 
 @log_help.timer(LG, LGp)
-def plot_meteogram(fname,title='',name='',fout='meteogram.png'):
+def plot_meteogram(fname,title='',name='',fout='meteogram.webp', ext='webp'):
    """
    Input: fname is the path to an xrarray created by meteogram_writer.py which
           populates the ncfile as new wrfout files become avialable
@@ -120,6 +121,8 @@ def plot_meteogram(fname,title='',name='',fout='meteogram.png'):
    #   Import and make MetPy units aware   #
    #                                       #
    ## Extract
+   lat = ds.attrs.get("location_lat")
+   lon = ds.attrs.get("location_lon")
    hours   = ds["time"].values                  # (n_time,)
    terrain = ds["terrain_height"].values        # (n_time,)
    heights = ds["heights"].values               # (n_time, n_level)
@@ -164,6 +167,7 @@ def plot_meteogram(fname,title='',name='',fout='meteogram.png'):
    umet   = umet.to('km h-1') 
    vmet   = vmet.to('km h-1') 
    ########################################
+   LG.info(f"Length meteogram data: {len(hours)}")
 
 
    # Pad frist and last hour for smooth edges
@@ -197,6 +201,10 @@ def plot_meteogram(fname,title='',name='',fout='meteogram.png'):
    rain_color = np.array([154,224,228])/255
    terrain_color = np.array([158,65,12])/255
 
+   msg =  f'({lat:.3f},{lon:.3f})'
+   ax0.text(0, 1, msg, va='top', ha='left', color='k', fontsize=12,
+                    bbox=dict(boxstyle="round", ec=None, fc=(1., 1., 1.,  .9)),
+             zorder=100, transform=ax0.transAxes)
 
    ########### Central plot. Meteogram
    # LAYER 0. wspd contourf with padded time and transposed wspd
@@ -376,7 +384,7 @@ def plot_meteogram(fname,title='',name='',fout='meteogram.png'):
 
 ### SAVE ######################################################################
    LG.info('saving')
-   fig.savefig(fout, bbox_inches='tight', pad_inches=0.1, dpi=150)
+   fig.savefig(fout, format=ext, bbox_inches='tight', pad_inches=0.1, dpi=100)
    LG.info(f'saved {fout}')
    plt.close('all')
 

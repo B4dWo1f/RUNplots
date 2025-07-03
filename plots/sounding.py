@@ -12,10 +12,12 @@ import logging
 LG = logging.getLogger(f'main.{__name__}')
 LGp = logging.getLogger(f'perform.{__name__}')
 
+import matplotlib as mpl
+mpl.use('Agg')
+
 import wrf
 import datetime as dt
 import numpy as np
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 plt.style.use(STYLE_PATH)
 inter_axis_color = (.7,.7,.7)
@@ -521,6 +523,6 @@ def skew_t_plot(WRF, lat,lon, fout='sounding.png', title='', name='', interpolat
 
 ### SAVE ######################################################################
    LG.info('saving')
-   fig.savefig(fout, bbox_inches='tight', pad_inches=0.1, dpi=150)
+   fig.savefig(fout, format='webp',bbox_inches='tight', pad_inches=0.1, dpi=100)
    LG.info(f'saved {fout}')
    plt.close('all')

@@ -5,6 +5,8 @@ import os
 here = os.path.dirname(os.path.realpath(__file__))
 HOME = os.getenv('HOME')
 STYLE_PATH = os.path.join(here, "styles", "RASP.mplstyle")
+import matplotlib as mpl
+mpl.use('Agg')
 
 import numpy as np
 import datetime as dt

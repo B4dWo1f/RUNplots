@@ -15,19 +15,20 @@ from playwright.sync_api import sync_playwright
 
 
 def make_request(url: str, element: str = None) -> str:
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
-        page.goto(url)
-
-        # Wait for a specific element if provided
-        if element:
-            page.wait_for_selector(element)
-
-        content = page.content()
-        browser.close()
-
-    return content
+   t_out = 15000
+   with sync_playwright() as p:
+      browser = p.chromium.launch(headless=True, args=["--disable-gpu", "--no-sandbox"])
+      context = browser.new_context()
+      try:
+         page = browser.new_page()
+         page.goto(url, timeout=t_out)  # 15 seconds
+         # Wait for a specific element if provided
+         if element:
+            page.wait_for_selector(element, timeout=t_out)
+         return page.content()
+      finally:
+         context.close()
+         browser.close()
 
 
 def validate_station_df(df):

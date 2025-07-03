@@ -3,7 +3,7 @@
 
 # Sys modules
 from pathlib import Path
-import os, sys, argparse
+import os, sys, argparse, psutil
 here = os.path.dirname(os.path.realpath(__file__))
 HOME = os.getenv('HOME')
 
@@ -23,6 +23,7 @@ import stations
 from meteogram_writer import make_meteogram_timestep, append_to_meteogram
 # web, sounding & meteogram
 import plots 
+import gc
 
 
 def existing_file(path):
@@ -139,15 +140,21 @@ def main():
    LG, LGp = log_help.batch_logger(script_path, domain, batch,
                                    is_cron, log_dir='logs')
 
+   LGp.info("=================================================")
+   LGp.info("=                New run started                =")
+   LGp.info("=================================================")
    LG.info("=================================================")
    LG.info("=                New run started                =")
    LG.info("=================================================")
    LG.info(f"Cron: {is_cron}")
    try:
       process_file(fname, config_file, LG)
+      gc.collect()
    except Exception as e:
       LG.exception(f"Failed to process file {fname}: {e}")
       sys.exit(1)
+   mem = psutil.Process(os.getpid()).memory_info().rss / 1024**2
+   LG.critical(f"Final memory before exit: {mem:.2f} MB")
 
 if __name__ == "__main__":
    main()

@@ -32,11 +32,9 @@ def download_data(url, Ndays=3):
 
    try:
       data = json.loads(data)
-      print("JSON data successfully parsed.")
-      # LG.debug("JSON data successfully parsed.")
+      LG.debug("JSON data successfully parsed.")
    except json.JSONDecodeError:
-      print("Failed to parse JSON data from API.")
-      # LG.error("Failed to parse JSON data from API.")
+      LG.error("Failed to parse JSON data from API.")
       return
 
    # Convert json data to csv

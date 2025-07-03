@@ -6,6 +6,9 @@ import logging
 LG = logging.getLogger(f'main.{__name__}')
 LGp = logging.getLogger(f'perform.{__name__}')
 
+import matplotlib as mpl
+mpl.use('Agg')
+
 # import os
 # here = os.path.dirname(os.path.realpath(__file__))
 

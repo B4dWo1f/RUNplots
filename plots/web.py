@@ -10,6 +10,11 @@ import os
 here = os.path.dirname(os.path.realpath(__file__))
 HOME = os.getenv('HOME')
 
+import matplotlib as mpl
+mpl.use('Agg')
+
+import gc  #XXX
+
 from . import geography as geo
 from . import fields as fplots
 from . import utils as ut
@@ -17,6 +22,7 @@ import matplotlib.pyplot as plt
 
 from dataclasses import dataclass
 from typing import Callable, Optional, Dict, Any
+from time import time
 
 @dataclass
 class PlotLayer:
@@ -165,13 +171,14 @@ def generate_scalars(WRF, config_path='configs/plots.ini',
 
 
    for name, field in fields.items():
+      t0 = time()
       LG.info(f"Plotting: {name}")
       factor, vmin, vmax, delta, levels,\
                           cmap, units, title = ut.scalar_props(config, name)
       full_title = f"{title} {date_label}"
 
       ax, crs_data = geo.setup_plot(WRF.geometry)
-      C = fplots.scalar_plot(ax, crs_data, lons, lats, field * factor,
+      fplots.scalar_plot(ax, crs_data, lons, lats, field * factor,
                           delta, vmin, vmax, cmap, levels=levels,
                           inset_label=date_label, prop_name=name)
 
@@ -180,18 +187,28 @@ def generate_scalars(WRF, config_path='configs/plots.ini',
       save_func(ax, fname)
       aux = WRF.paths['plots_daily']
       ut.save_zooms(ax, crs_data, zooms, aux, hname, save_func)
+      fig = ax.figure
+      plt.close(fig)
+      del ax, fig
+      gc.collect()
+
       # Colorbar
       # fname = WRF.paths['plots_common'] / name
       fname = WRF.paths['plots_common'] / f"{name}.{ext}"
       if not fname.is_file() or force:
-         LG.debug(f'plotted colorbar {name}')
+         LG.debug(f'plotting colorbar {name}')
          ax = fplots.plot_colorbar(cmap,delta,vmin,vmax, levels,
                                         name=fname,units=units,
                                         fs=15,norm=None,extend='max')
          save_func(ax, fname.with_suffix(''))
+         fig = ax.figure
+         plt.close(fig)
+         del ax, fig
+         gc.collect()
          LG.info(f'plotted colorbar {name}')
       else:
-         LG.info(f'{fname} already present')
+         LG.info(f'colorbar {name} already present')
+      LG.info(f"Full Time for {name}: {time()-t0:.4f}s")
 
 
 
@@ -287,4 +304,5 @@ def generate_vectors(WRF, config_path='configs/plots.ini', zooms={}):
       aux = WRF.paths['plots_daily']
       ut.save_zooms(ax, crs_data, zooms, aux, vname, save_func)
       LG.info(f"Windbarbs: {name}")
-
+      fig = ax.figure
+      plt.close(fig)

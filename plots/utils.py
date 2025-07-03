@@ -1,12 +1,15 @@
 #!/usr/bin/python3
 # -*- coding: UTF-8 -*-
 
+import os
 import log_help
 import logging
 LG = logging.getLogger(f'main.{__name__}')
 LGp = logging.getLogger(f'perform.{__name__}')
 
-import os
+import matplotlib as mpl
+mpl.use('Agg')
+
 import datetime as dt
 from configparser import ConfigParser, ExtendedInterpolation
 import matplotlib.pyplot as plt
@@ -21,17 +24,17 @@ def utc_shift():
 
 
 @log_help.timer(LG, LGp)
-def save_figure(ax,fname, dpi=150, ext='webp'):
+def save_figure(thisax,fname, dpi=100, ext='webp'):
    LG.debug(f'Saving: {fname}.{ext}')
-   fig = ax.figure
-   fig.savefig(f"{fname}.{ext}", format=ext, dpi=150, transparent=True,
+   thisfig = thisax.figure
+   thisfig.savefig(f"{fname}.{ext}", format=ext, dpi=dpi, transparent=True,
             bbox_inches='tight', pad_inches=0)
    LG.info(f'Saved: {fname}.{ext}')
-   plt.close('all')
+   # plt.close('all')
 
 
 @log_help.timer(LG, LGp)
-def save_zooms(ax, crs_data, zooms, out_dir, base_name, save_func):
+def save_zooms(myax, crs_data, zooms, out_dir, base_name, save_func):
     """
     Save zoomed-in views of a plot by adjusting the map extent.
 
@@ -51,9 +54,9 @@ def save_zooms(ax, crs_data, zooms, out_dir, base_name, save_func):
         Function to save the figure. Typically `save_figure(ax, fname)`.
     """
     for name, bounds in zooms.items():
-        ax.set_extent(bounds, crs=crs_data)
+        myax.set_extent(bounds, crs=crs_data)
         fname = out_dir / f"{base_name}_z{name}"
-        save_func(ax, fname)
+        save_func(myax, fname)
         LG.info(f"Saved zoom: {name}")
 
 
