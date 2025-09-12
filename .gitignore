@@ -4,8 +4,11 @@ __pycache__
 **.pid
 **.err
 **.png
+**.gif
+**.out
 titles.txt
 STOP
 plots.ini
-**.out
 zooms.ini
+.venv3.10/
+logs/

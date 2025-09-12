@@ -1,0 +1,20 @@
+
+*.path    is the watcher
+*.service is the worker
+
+# Path
+systemctl --user start file.path
+systemctl --user stop file.path
+systemctl --user restart file.path
+systemctl --user enable file.path
+systemctl --user disable file.path
+systemctl --user status file.path
+
+# Service
+systemctl --user start file.service
+systemctl --user stop file.service
+systemctl --user status file.service
+systemctl --user reload file.service
+systemctl --user daemon-reload
+
+journalctl --user-unit wrfout_watcher.service -n 50 --no-pager  # Last 50 logs

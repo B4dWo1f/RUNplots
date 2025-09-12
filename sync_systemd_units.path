@@ -1,0 +1,13 @@
+[Unit]
+Description=Watch for modifications to all the .service/.timer/.path files
+
+[Path]
+PathModified=%h/CODES/RUN_plots/sync_systemd_units.service
+PathModified=%h/CODES/RUN_plots/sync_systemd_units.path
+PathModified=%h/CODES/RUN_plots/wrfout_watcher.service
+PathModified=%h/CODES/RUN_plots/stations_downloader.service
+PathModified=%h/CODES/RUN_plots/stations_downloader.timer
+Unit=sync_systemd_units.service
+
+[Install]
+WantedBy=default.target
