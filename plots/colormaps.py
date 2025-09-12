@@ -134,7 +134,9 @@ cols = [col2,col3,col0,col1,col4,col5] #,col6,col7,col8,col9,col9]
 
 stops = [C/255 for C in cols]
 Ns = [3, 7, 15, 28, 28]
-CAPE = mycmap(stops, Ns, name='cape')
+dists = [0, 0.03703704, 0.12345679, 0.30864198, 0.65432099, 1.]
+# CAPE = mycmap(stops, Ns, name='cape')
+CAPE = LinearSegmentedColormap.from_list("cape", list(zip(dists, stops)) )
 ###############################################################################
 ###   
 ###   ## Wind Speed 1 ###############################################################
