@@ -1,6 +1,11 @@
 #!/usr/bin/python3
 # -*- coding: UTF-8 -*-
 
+import log_help
+import logging
+LG = logging.getLogger(f'main.{__name__}')
+LGp = logging.getLogger(f'perform.{__name__}')
+
 import os
 import json
 import pandas as pd

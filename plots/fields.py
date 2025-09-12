@@ -237,19 +237,23 @@ def plot_colorbar(cmap,delta=4,vmin=0,vmax=60,levels=None,name='cbar',
    levels = []  : a list of levels is computed from vmin to vmax with delta steps
    levels = [#] : the list provided is respected
    """
-   try: cmap = mycolormaps[cmap]
-   except KeyError: pass
+   if isinstance(cmap, str):
+      cmap = mycolormaps.get(cmap, cmap)  # fallback to matplotlib default
+   # try: cmap = mycolormaps[cmap]
+   # except KeyError: pass
    fig, ax = plt.subplots()
    fig.set_figwidth(11)
    img = np.random.uniform(vmin,vmax,size=(40,40))
    # if type(levels) != type(None) and len(levels) == 0:
    #    levels=np.arange(vmin,vmax,delta)
 
-   if len(levels) > 0:
-      norm = BoundaryNorm(levels,len(levels))
-   else:
-      levels = np.arange(vmin,vmax,delta)
-      norm = None
+   ## if len(levels) > 0:
+   ##    norm = BoundaryNorm(levels,len(levels))
+   ## else:
+   ##    LG.critical(f'DELTA: {delta} {type(delta)}')
+   ##    if np.isnan(delta): levels = None
+   ##    else: levels = np.arange(vmin,vmax,delta)
+   ##    norm = None
    # if levels is None:
    #    norm = None
    # else:
@@ -258,19 +262,41 @@ def plot_colorbar(cmap,delta=4,vmin=0,vmax=60,levels=None,name='cbar',
    #    else:
    #       levels = np.arange(vmin,vmax,delta)
    #       norm = None
-   img = ax.contourf(img, levels=levels,
-                          extend=extend,
-                          antialiased=True,
-                          cmap=cmap,
-                          norm=norm,
-                          vmin=vmin, vmax=vmax)
+
+   if np.isnan(delta):   # smooth gradient
+      try:
+         img = ax.contourf(img, cmap=cmap,
+                                vmin=vmin, vmax=vmax,
+                                # shading=shade, transform=crs_data,
+                                antialiased=True)
+      except Exception as e:
+         LG.warning(f"Failed colorbar {e}")
+   else:
+      if len(levels) == 0: levels = np.arange(vmin,vmax,delta)
+      else: pass
+      norm = BoundaryNorm(levels, cmap.N)
+      try:
+         img = ax.contourf(img, cmap=cmap, norm=norm,
+                        # vmin=vmin, vmax=vmax,  # Optional if using norm
+                                # shading=shade, transform=crs_data,
+                                antialiased=True)
+      except Exception as e:
+         LG.warning(f"Failed colorbar {e}")
+
+
+   # img = ax.contourf(img, levels=levels,
+   #                        extend=extend,
+   #                        antialiased=True,
+   #                        cmap=cmap,
+   #                        norm=norm,
+   #                        vmin=vmin, vmax=vmax)
    plt.gca().set_visible(False)
    divider = make_axes_locatable(ax)
    cax = divider.new_vertical(size="5%", pad=0.25, pack_start=True)
            #2.95%"
    fig.add_axes(cax)
    cbar = fig.colorbar(img, cax=cax, orientation="horizontal")
-   cbar.ax.set_xlabel(units,fontsize=fs)
+   cbar.ax.set_xlabel(units, fontsize=fs)
    # fig.savefig(f'{name}.png', transparent=True,
    #                            bbox_inches='tight', pad_inches=0.1)
    # plt.close('all')  #XXX are you sure???

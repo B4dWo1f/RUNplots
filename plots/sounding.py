@@ -328,8 +328,9 @@ def skew_t_plot(WRF, lat,lon, fout='sounding.png', title='', name='', interpolat
    X = np.array([p[0].magnitude,lcl_p.magnitude]) * lcl_p.units
    Y = np.array([td0.magnitude, lcl_t.magnitude]) * lcl_t.units
    skew_bot.plot(X, Y, color='C2',ls='--',lw=1.5, zorder=0)
-   ## Iso 0
-   skew_bot.ax.axvline(0, color='cyan',ls='--',lw=0.65)
+   ## Iso 0 & -10
+   skew_bot.ax.axvline(0, color='cyan',lw=0.65)
+   skew_bot.ax.axvline(-10, color='cyan',ls='--',lw=0.5)
    ## Iso t0
    skew_bot.plot([Pmax.magnitude,p[0].magnitude],
                  [t0c.magnitude,t0c.magnitude],
@@ -459,6 +460,9 @@ def skew_t_plot(WRF, lat,lon, fout='sounding.png', title='', name='', interpolat
    skew_top.ax.set_yticks(yticks_top)
    skew_top.ax.set_yticklabels(ylabels)
    skew_top.ax.set_ylabel('Altitude (m)')
+   # Iso 0 & -10
+   skew_top.ax.axvline(0, color='cyan',lw=0.65)
+   skew_top.ax.axvline(-10, color='cyan',ls='--',lw=0.5)
 
 
    msg =  f'({lat:.3f},{lon:.3f})'

@@ -175,6 +175,11 @@ def generate_scalars(WRF, config_path='configs/plots.ini',
       LG.info(f"Plotting: {name}")
       factor, vmin, vmax, delta, levels,\
                           cmap, units, title = ut.scalar_props(config, name)
+      LG.debug(f'{name} factor: {factor}')
+      LG.debug(f'{name} vmin: {vmin}')
+      LG.debug(f'{name} vmax: {vmax}')
+      LG.debug(f'{name} delta: {delta}')
+      LG.debug(f'{name} levels: {levels}')
       full_title = f"{title} {date_label}"
 
       ax, crs_data = geo.setup_plot(WRF.geometry)

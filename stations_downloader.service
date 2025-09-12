@@ -3,6 +3,7 @@ Description=Download weather station data
 
 [Service]
 Type=simple
-ExecStart=%h/CODES/RUN_plots/stations_downloader.sh
-StandardOutput=append:%h/CODES/RUN_plots/logs/stations_downloader.log
-StandardError=append:%h/CODES/RUN_plots/logs/stations_downloader.err
+ExecStart=%h/METEO/RUN_post/stations_downloader.sh
+StandardOutput=append:%h/METEO/RUN_post/stations_downloader.log
+StandardError=append:%h/METEO/RUN_post/stations_downloader.err
+TimeoutStartSec=180

@@ -11,7 +11,7 @@ import sys
 import stations.utils as sut
 from stations.utils import save_station_csv, validate_station_df
 from stations.schema import STATION_CSV_COLUMNS
-from stations.api import openwindmap, wunderground
+from stations.api import openwindmap, wunderground, freeflightwx
 import utils as ut
 from plots.baliza import compare
 
@@ -48,6 +48,7 @@ def choose_backend(url):
    """
    if "openwindmap.org" in url: return openwindmap.download_data
    elif "wunderground.com" in url: return wunderground.download_data
+   elif "freeflightwx.com" in url: return freeflightwx.download_data
    # Add more providers here as needed
    else: raise ValueError(f"Unsupported API for: {url}")
 
