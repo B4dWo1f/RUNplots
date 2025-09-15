@@ -13,7 +13,8 @@ RUN_post
   │        - plot 2d scalar maps (wind speed, wstar, wblmaxmin, ...)
   │        - plot 2d vector maps (wind direction, streamlines and wind barbs)
   │        - plot soundings and meteograms
-  │        - TO-DO: Save data for comparison to stations
+  │        - save data for comparison to stations in
+  │            /storage/DATA/Spain6_1/stations/predictions/
   ├── calc_data.py
   │       Contains the definition of CalcData. It's purpose is to deal with
   │        the WRF interface, calculate DrJack variables and other derived
@@ -42,6 +43,12 @@ RUN_post
   │         logs/
   │          ├── run_postprocess_<domain>_GFS<gfsbatch>.log
   │          └── run_postprocess_<domain>_GFS<gfsbatch>.perform
+  ├── download_stations_data.py
+  │       Reads the files configs/stations_d0*.csv, updates the stations
+  │       data files in /storage/DATA/Spain6_1/stations/observations/ and
+  │       plots the corresponding data merging
+  │       /storage/DATA/Spain6_1/stations/observations/ and
+  │       /storage/DATA/Spain6_1/stations/predictions/
   ├── utils.py
   │       Helper functions: check directories, parse file names for domain/date,
   │       load config files, etc...
@@ -104,15 +111,22 @@ RUN_post
 
 
 ## Continuous running
+The easiest solution I've found to be a couple of lines in crontab:
+```bash
+# Stations
+*/5 * * * * $HOME/METEO/RUN_post/stations_downloader.sh
+# wrfout Post-Process
+@reboot /path/to/RUNplots/wrfout_watcher.sh
+```
+`stations_downloader.sh` sets up the python environment and launches `download_stations_data.py`, which updates the observation files in `/storage/DATA/Spain6_1/stations/observations`
+
 `wrfout_watcher.sh` is a continous loop that checks `$WRFOUT_DIR` for files with name `wrfout_d01*`.
-When a new file is found it executes in parallel `$MAIN_SCRIPT` on the `wrfout_d01*` and `wrfout_d02*` files.
+When a new file is found it executes in parallel `$MAIN_SCRIPT` (`run_postprocess.py`) on the `wrfout_d01*` and `wrfout_d02*` files.
 Once both files have being processed, they are moved to `$PROCESSED_DIR`
 
-In order to launch this script at boot up we use a systemd service: `wrfout_watcher.service` which also sets up the log and error files for `wrfout_watcher.sh`
+-----
 
-The services in ubuntu should be placed under `~/.config/systemd/user/` but symlinking is not recommended since `systemctl --user disable <name>.service` deletes all symlinks in the folder.
-In order to circumvent this issue I've made yet another service which will be triggered whenever `wrfout_watcher.service` is modified.
-The way it works is the following:
- - `sync_wrfout_watcher.path` is a hook that triggers `sync_wrfout_watcher.service` whenever `wrfout_watcher.service` is modified
- - `sync_wrfout_watcher.service` executes `sync_wrfout_watcher.sh`
- - `sync_wrfout_watcher.sh` copies the modified `wrfout_watcher.service` to `~/.config/systemd/user/` and reloads the daemon
+An alternative option, based on systemd services, is provided; however, I encountered issues using it on Ubuntu 22.04, particularly when rebooting the system.
+
+The services can be setup using `setup_systemd.sh` which copy the relevant files to `~/.config/systemd/user/` and start the services.
+The services can be removed completely using `nuke_systemd.sh`
