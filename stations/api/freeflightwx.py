@@ -3,8 +3,7 @@
 
 import log_help
 import logging
-LG = logging.getLogger(f'main.{__name__}')
-LGp = logging.getLogger(f'perform.{__name__}')
+LG = logging.getLogger(f"main.{__name__}")
 
 import requests
 import datetime as dt

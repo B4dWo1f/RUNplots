@@ -3,8 +3,7 @@
 
 import log_help
 import logging
-LG = logging.getLogger(f'main.{__name__}')
-LGp = logging.getLogger(f'perform.{__name__}')
+LG = logging.getLogger(f"main.{__name__}")
 
 import os
 import json
@@ -16,7 +15,7 @@ import stations.utils as ut
 UTCshift = dt.datetime.now() - dt.datetime.utcnow()
 UTCshift = dt.timedelta(hours = round(UTCshift.total_seconds()/3600))
 
-def download_data(url, Ndays=3):
+def download_data(url, Ndays=5):
    station_id = url.split('/')[-1].split('-')[-1]
    # LG.info(f"Updating station {station_id} into file {fname}")
    today = dt.datetime.now().replace(hour=0,minute=0,second=0,microsecond=0)
@@ -32,7 +31,7 @@ def download_data(url, Ndays=3):
    url_base = f"http://api.pioupiou.fr/v1/archive/{station_id}"
    url = f"{url_base}?start={start}&stop={stop}&format={fmt}"
    com = f"curl -s '{url}'"
-   # LG.debug(f'CURL command: {com}')
+   LG.info(f'CURL command: {com}')
    data = os.popen(com).read().strip()
 
    try:

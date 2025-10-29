@@ -16,7 +16,7 @@ import utils as ut
 from plots.baliza import compare
 
 # Setup logger
-LG = logging.getLogger("download_api")
+LG = logging.getLogger("main")
 logging.basicConfig(
    level=logging.INFO,
    format='[%(asctime)s] %(levelname)s - %(message)s',
@@ -26,7 +26,7 @@ logging.basicConfig(
 log_file = Path("logs/stations_downloader.log")
 file_handler = logging.FileHandler(log_file, mode='a')
 file_handler.setFormatter(logging.Formatter(
-    '[%(asctime)s] %(levelname)s - %(message)s',
+    '[%(asctime)s] %(name)s:%(levelname)s - %(message)s',
     datefmt='%Y/%m/%d %H:%M:%S'
 ))
 LG.addHandler(file_handler)

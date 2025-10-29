@@ -12,7 +12,7 @@ from stations.schema import STATION_CSV_COLUMNS
 import stations.utils as sut
 import utils as ut   # root level
 
-LG = logging.getLogger("wunderground_api")
+LG = logging.getLogger(f"main.{__name__}")
 
 UTCshift = dt.datetime.now() - dt.datetime.utcnow()
 UTCshift = dt.timedelta(hours = round(UTCshift.total_seconds()/3600))
@@ -88,6 +88,7 @@ def download_data(url_base):
    date = dt.datetime.now() #- dt.timedelta(days=1)
    date_str = date.strftime('%Y-%m-%d')
    url = f"{url_base}/{date_str}/{date_str}/daily"
+   LG.info(f'wunderground: {url}')
    html = sut.make_request(url, "table.history-table.desktop-table")
    soup = BeautifulSoup(html, 'html.parser')
 
