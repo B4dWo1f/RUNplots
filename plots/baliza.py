@@ -87,21 +87,25 @@ def compare(obs_df, wrf_df, title='',fout='baliza.png'):
    y = obs_df['wind_speed_avg'].values
    ymin = obs_df['wind_speed_min'].values
    ymax = obs_df['wind_speed_max'].values
+   ylim_max = np.max(ymax)
    ax0.plot(x,y,'C0-.', label='Station full', alpha=.5)
    ax0.fill_between(x,ymin,ymax,color='C0',alpha=.3)
    # station 60-minute
    x = (obs_DF.index + UTCshift).values
    y = obs_DF['wind_speed_avg'].values
+   ylim_max = np.max([np.max(ylim_max), np.max(y)])
    ax0.plot(x,y,'C0-o', label='Station hourly')
    # WRF
    x = (wrf_df.index + UTCshift).values
    y = wrf_df['wind_speed_avg'].values
+   ylim_max = np.max([np.max(ylim_max), np.max(y)])
    ax0.plot(x,y,'C1-o', label='RASP')
 
    ax0.set_ylabel('Wspeed (km/h)')
    # ax.set_xlabel('Time')
    ax0.set_title(title)
    ax0.set_xticklabels([])
+   ax0.set_ylim(0, max([ylim_max, 30])+2.5) # XXX
 
 
    ## Wdir

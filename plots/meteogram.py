@@ -323,6 +323,8 @@ def plot_meteogram(fname,title='',name='',fout='meteogram.webp', ext='webp'):
                            GND - ground_bottom,      # height
                            color='saddlebrown', zorder=60)
    ax.add_patch(ground_rect)
+   ax.text(.01,.01, f'GND: {int(terrain[0])}m',
+           backgroundcolor=(1,1,1,.5), transform=ax.transAxes, zorder=100)
 
 
    # LAYER 7. Wind 10m above ground
