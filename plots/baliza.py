@@ -1,6 +1,11 @@
 #!/usr/bin/python3
 # -*- coding: UTF-8 -*-
 
+# import log_help
+import logging
+LG = logging.getLogger(f'main.{__name__}')
+LGp = logging.getLogger(f'perform.{__name__}')
+
 import os
 here = os.path.dirname(os.path.realpath(__file__))
 HOME = os.getenv('HOME')
@@ -59,12 +64,14 @@ def compare(obs_df, wrf_df, title='',fout='baliza.png'):
    wrf_df = wrf_df[wrf_df.index > today - UTCshift]
    wrf_df = wrf_df.iloc[1:] # skip frist line, pure GFS data not WRF processed
    wrf_df = wrf_df[wrf_df.index < end]
-   obs_df = obs_df[obs_df.index > today - UTCshift]
+   if obs_df.empty: LG.critical(f'Observations df for {fout} is empty')
+   else: obs_df = obs_df[obs_df.index > today - UTCshift]
 
 
    for df in [wrf_df, obs_df]:
       df['wind_heading_north'] = df['wind_heading'].apply(rotate_wind)
-   obs_DF = obs_df.resample("h", label='right', closed='right').mean()
+   if not obs_df.empty:
+      obs_DF = obs_df.resample("h", label='right', closed='right').mean()
 
    # Plots
    # Decide fields to plot
@@ -83,18 +90,20 @@ def compare(obs_df, wrf_df, title='',fout='baliza.png'):
 
    ## Wspd
    # station 5-minute
-   x = (obs_df.index + UTCshift).values
-   y = obs_df['wind_speed_avg'].values
-   ymin = obs_df['wind_speed_min'].values
-   ymax = obs_df['wind_speed_max'].values
-   ylim_max = np.max(ymax)
-   ax0.plot(x,y,'C0-.', label='Station full', alpha=.5)
-   ax0.fill_between(x,ymin,ymax,color='C0',alpha=.3)
-   # station 60-minute
-   x = (obs_DF.index + UTCshift).values
-   y = obs_DF['wind_speed_avg'].values
-   ylim_max = np.max([np.max(ylim_max), np.max(y)])
-   ax0.plot(x,y,'C0-o', label='Station hourly')
+   ylim_max = 0
+   if not obs_df.empty:
+      x = (obs_df.index + UTCshift).values
+      y = obs_df['wind_speed_avg'].values
+      ymin = obs_df['wind_speed_min'].values
+      ymax = obs_df['wind_speed_max'].values
+      ylim_max = np.max(ymax)
+      ax0.plot(x,y,'C0-.', label='Station full', alpha=.5)
+      ax0.fill_between(x,ymin,ymax,color='C0',alpha=.3)
+      # station 60-minute
+      x = (obs_DF.index + UTCshift).values
+      y = obs_DF['wind_speed_avg'].values
+      ylim_max = np.max([np.max(ylim_max), np.max(y)])
+      ax0.plot(x,y,'C0-o', label='Station hourly')
    # WRF
    x = (wrf_df.index + UTCshift).values
    y = wrf_df['wind_speed_avg'].values
@@ -107,9 +116,10 @@ def compare(obs_df, wrf_df, title='',fout='baliza.png'):
    ax0.set_xticklabels([])
    ax0.set_ylim(0, max([ylim_max, 30])+2.5) # XXX
 
-
    ## Wdir
-   aux = np.concatenate([obs_DF['wind_heading'].values,wrf_df['wind_heading'].values])
+   if not obs_df.empty:
+      aux = np.concatenate([obs_DF['wind_heading'].values,wrf_df['wind_heading'].values])
+   else: aux = wrf_df['wind_heading'].values
    aux = np.max(np.abs(np.diff(aux)))
    if aux > 180:
       center_north = True
@@ -121,13 +131,14 @@ def compare(obs_df, wrf_df, title='',fout='baliza.png'):
    if center_north: wdir_col = 'wind_heading_north'
    else: wdir_col = 'wind_heading'
    # station 5-minute
-   x = (obs_df.index + UTCshift).values
-   y = obs_df[wdir_col].values
-   ax1.plot(x,y,'C0-.', label='Station full', alpha=.5)
-   # station 60-minute
-   x = (obs_DF.index + UTCshift).values
-   y = obs_DF[wdir_col].values
-   ax1.plot(x,y,'C0-o', label='Station hourly')
+   if not obs_df.empty:
+      x = (obs_df.index + UTCshift).values
+      y = obs_df[wdir_col].values
+      ax1.plot(x,y,'C0-.', label='Station full', alpha=.5)
+      # station 60-minute
+      x = (obs_DF.index + UTCshift).values
+      y = obs_DF[wdir_col].values
+      ax1.plot(x,y,'C0-o', label='Station hourly')
    # WRF
    x = (wrf_df.index + UTCshift).values
    y = wrf_df[wdir_col].values
@@ -159,24 +170,28 @@ def compare(obs_df, wrf_df, title='',fout='baliza.png'):
       ax2 = axes[n_ax]
       n_ax += 1  # increase counting for next plot
       ax2_twin = ax2.twinx()
-      x = (obs_df.index + UTCshift).values
-      y = obs_df['temperature'].values
-      ax2.plot(x,y, 'C0-.', alpha=.5)
-      x = (obs_DF.index + UTCshift).values
-      y = obs_DF['temperature'].values
-      ax2.plot(x,y, 'C0-o')
+      # station 5-minute
+      if not obs_df.empty:
+         x = (obs_df.index + UTCshift).values
+         y = obs_df['temperature'].values
+         ax2.plot(x,y, 'C0-.', alpha=.5)
+         x = (obs_DF.index + UTCshift).values
+         y = obs_DF['temperature'].values
+         ax2.plot(x,y, 'C0-o')
       x = (wrf_df.index + UTCshift).values
       y = wrf_df['temperature'].values
       ax2.plot(x,y, 'C1-o')
 
       if include_rh:
          # Relative humidity
-         x = (obs_df.index + UTCshift).values
-         y = obs_df['temperature'].values
-         ax2_twin.plot(x,y, 'C2-.', alpha=.5)
-         x = (obs_DF.index + UTCshift).values
-         y = obs_DF['temperature'].values
-         ax2_twin.plot(x,y, 'C2-o', label='Station Rh (%)')
+         # station 5-minute
+         if not obs_df.empty:
+            x = (obs_df.index + UTCshift).values
+            y = obs_df['temperature'].values
+            ax2_twin.plot(x,y, 'C2-.', alpha=.5)
+            x = (obs_DF.index + UTCshift).values
+            y = obs_DF['temperature'].values
+            ax2_twin.plot(x,y, 'C2-o', label='Station Rh (%)')
          x = (wrf_df.index + UTCshift).values
          y = wrf_df['temperature'].values
          ax2_twin.plot(x,y, 'C3-o', label='RASP Rh (%)')
@@ -188,12 +203,14 @@ def compare(obs_df, wrf_df, title='',fout='baliza.png'):
    if include_solar:
       ax3 = axes[n_ax]
       n_ax += 1  # increase counting for next plot
-      x = (obs_df.index + UTCshift).values
-      y = obs_df['swdown'].values
-      ax3.plot(x,y, 'C0-.', alpha=.5)
-      x = (obs_DF.index + UTCshift).values
-      y = obs_DF['swdown'].values
-      ax3.plot(x,y, 'C0-o')
+      # station 5-minute
+      if not obs_df.empty:
+         x = (obs_df.index + UTCshift).values
+         y = obs_df['swdown'].values
+         ax3.plot(x,y, 'C0-.', alpha=.5)
+         x = (obs_DF.index + UTCshift).values
+         y = obs_DF['swdown'].values
+         ax3.plot(x,y, 'C0-o')
       x = (wrf_df.index + UTCshift).values
       y = wrf_df['swdown'].values
       ax3.plot(x,y, 'C1-o')

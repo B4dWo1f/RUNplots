@@ -87,7 +87,8 @@ def read_station_csv(csv_path):
       df = pd.read_csv(csv_path, parse_dates=["time"])
       df.set_index('time', inplace=True)
    except Exception as e:
-      raise ValueError(f"Failed to read or parse CSV: {e}")
+      # raise ValueError(f"Failed to read or parse CSV: {e}")
+      df = pd.DataFrame().set_index(pd.DatetimeIndex([]))
 
    # Ensure correct dtypes (date already parsed)
    for col in ["wind_speed_min", "wind_speed_avg", "wind_speed_max",
